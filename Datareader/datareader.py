@@ -11,126 +11,188 @@ import copy
 # structure followed in this file is based on : https://github.com/nhammerla/deepHAR/tree/master/data
 # and https://github.com/IRC-SPHERE/sphere-challenge
 
+
 class data_reader:
     def __init__(self, dataset):
-        if dataset == 'dap':
+        if dataset == "dap":
             self.data, self.idToLabel = self.readDaphnet()
             self.save_data(dataset)
-        elif dataset =='opp':
+        elif dataset == "opp":
             self.data, self.idToLabel = self.readOpportunity()
             self.save_data(dataset)
-        elif dataset == 'pa2':
+        elif dataset == "pa2":
             self.data, self.idToLabel = self.readPamap2()
             self.save_data(dataset)
-        elif dataset == 'sph':
+        elif dataset == "sph":
             self.data, self.idToLabel = self.readSphere()
             self.save_data(dataset)
         else:
-            print('Not supported yet')
+            print("Not supported yet")
             sys.exit(0)
 
-    def save_data(self,dataset):
-        if dataset == 'dap':
-            f = h5py.File('daphnet.h5')
+    def save_data(self, dataset):
+        if dataset == "dap":
+            f = h5py.File("daphnet.h5", "w")
             for key in self.data:
                 f.create_group(key)
                 for field in self.data[key]:
                     f[key].create_dataset(field, data=self.data[key][field])
             f.close()
-            print('Done.')
-        elif dataset == 'opp':
-            f = h5py.File('opportunity.h5')
+            print("Done.")
+        elif dataset == "opp":
+            f = h5py.File("opportunity.h5", "w")
             for key in self.data:
                 f.create_group(key)
                 for field in self.data[key]:
                     f[key].create_dataset(field, data=self.data[key][field])
             f.close()
-            print('Done.')
-        elif dataset == 'pa2':
-            f = h5py.File('pamap2.h5')
+            print("Done.")
+        elif dataset == "pa2":
+            f = h5py.File("pamap2.h5", "w")
             for key in self.data:
                 f.create_group(key)
                 for field in self.data[key]:
                     f[key].create_dataset(field, data=self.data[key][field])
             f.close()
-            print('Done.')
+            print("Done.")
         elif dataset == "sph":
-            f = h5py.File('sphere.h5')
+            f = h5py.File("sphere.h5", "w")
             for key in self.data:
                 f.create_group(key)
                 for field in self.data[key]:
                     f[key].create_dataset(field, data=self.data[key][field])
             f.close()
-            print('Done.')
+            print("Done.")
         else:
-            print('Not supported yet')
+            print("Not supported yet")
             sys.exit(0)
 
     @property
     def train(self):
-        return self.data['train']
+        return self.data["train"]
 
     @property
     def test(self):
-        return self.data['test']
+        return self.data["test"]
 
     def readPamap2(self):
         files = {
-            'train': ['subject101.dat', 'subject102.dat','subject103.dat','subject104.dat', 'subject107.dat', 'subject108.dat', 'subject109.dat'],
-            'test': ['subject106.dat']
+            "train": [
+                "subject101.dat",
+                "subject102.dat",
+                "subject103.dat",
+                "subject104.dat",
+                "subject107.dat",
+                "subject108.dat",
+                "subject109.dat",
+            ],
+            "test": ["subject106.dat"],
         }
         label_map = [
             # (0, 'other'),
-            (1, 'lying'),
-            (2, 'sitting'),
-            (3, 'standing'),
-            (4, 'walking'),
-            (5, 'running'),
-            (6, 'cycling'),
-            (7, 'Nordic walking'),
-            (9, 'watching TV'),
-            (10, 'computer work'),
-            (11, 'car driving'),
-            (12, 'ascending stairs'),
-            (13, 'descending stairs'),
-            (16, 'vacuum cleaning'),
-            (17, 'ironing'),
-            (18, 'folding laundry'),
-            (19, 'house cleaning'),
-            (20, 'playing soccer'),
-            (24, 'rope jumping')
+            (1, "lying"),
+            (2, "sitting"),
+            (3, "standing"),
+            (4, "walking"),
+            (5, "running"),
+            (6, "cycling"),
+            (7, "Nordic walking"),
+            (9, "watching TV"),
+            (10, "computer work"),
+            (11, "car driving"),
+            (12, "ascending stairs"),
+            (13, "descending stairs"),
+            (16, "vacuum cleaning"),
+            (17, "ironing"),
+            (18, "folding laundry"),
+            (19, "house cleaning"),
+            (20, "playing soccer"),
+            (24, "rope jumping"),
         ]
         labelToId = {str(x[0]): i for i, x in enumerate(label_map)}
         # print "label2id=",labelToId
         idToLabel = [x[1] for x in label_map]
         # print "id2label=",idToLabel
         cols = [
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,
-                35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53
-               ]
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+        ]
         # print "cols",cols
-        data = {dataset: self.readPamap2Files(files[dataset], cols, labelToId)
-                for dataset in ('train', 'test')}
+        data = {
+            dataset: self.readPamap2Files(files[dataset], cols, labelToId)
+            for dataset in ("train", "test")
+        }
         return data, idToLabel
 
     def readPamap2Files(self, filelist, cols, labelToId):
         data = []
         labels = []
         for i, filename in enumerate(filelist):
-            print('Reading file %d of %d' % (i+1, len(filelist)))
-            with open('./Protocol/%s' % filename, 'r') as f:
-                #print "f",f
-                reader = csv.reader(f, delimiter=' ')
+            print("Reading file %d of %d" % (i + 1, len(filelist)))
+            with open("./Protocol/%s" % filename, "r") as f:
+                # print "f",f
+                reader = csv.reader(f, delimiter=" ")
                 for line in reader:
-                    #print "line=",line
+                    # print "line=",line
                     elem = []
-                    #not including the non related activity
+                    # not including the non related activity
                     if line[1] == "0":
                         continue
                     # if line[10] == "0":
                     #     continue
                     for ind in cols:
-                        #print "ind=",ind
+                        # print "ind=",ind
                         # if ind == 10:
                         #     # print "line[ind]",line[ind]
                         #     if line[ind] == "0":
@@ -139,7 +201,7 @@ class data_reader:
                     # print "elem =",elem
                     # print "elem[:-1] =",elem[:-1]
                     # print "elem[0] =",elem[0]
-                    if sum([x == 'NaN' for x in elem]) == 0:
+                    if sum([x == "NaN" for x in elem]) == 0:
                         data.append([float(x) / 1000 for x in elem[:-1]])
                         labels.append(labelToId[elem[0]])
                         # print "[x for x in elem[:-1]]=",[x for x in elem[:-1]]
@@ -147,120 +209,248 @@ class data_reader:
                         # print "labelToId[elem[0]]=",labelToId[elem[0]]
                         # print "labelToId[elem[-1]]",labelToId[elem[-1]]
                         # sys.exit(0)
-        
-        return {'inputs': np.asarray(data), 'targets': np.asarray(labels, dtype=int)+1}
+
+        return {
+            "inputs": np.asarray(data),
+            "targets": np.asarray(labels, dtype=int) + 1,
+        }
 
     def readDaphnet(self):
         files = {
-            'train': ['S01R01.txt', 'S01R02.txt','S03R01.txt','S03R02.txt', 'S03R03.txt', 'S04R01.txt', 'S05R01.txt', 'S05R02.txt','S06R01.txt', 'S06R02.txt', 'S07R01.txt', 'S07R02.txt', 'S08R01.txt','S10R01.txt'],
-            'test': ['S02R01.txt', 'S02R02.txt']
+            "train": [
+                "S01R01.txt",
+                "S01R02.txt",
+                "S03R01.txt",
+                "S03R02.txt",
+                "S03R03.txt",
+                "S04R01.txt",
+                "S05R01.txt",
+                "S05R02.txt",
+                "S06R01.txt",
+                "S06R02.txt",
+                "S07R01.txt",
+                "S07R02.txt",
+                "S08R01.txt",
+                "S10R01.txt",
+            ],
+            "test": ["S02R01.txt", "S02R02.txt"],
         }
-        label_map = [
-            (1, 'No freeze'),
-            (2, 'freeze')
-        ]
+        label_map = [(1, "No freeze"), (2, "freeze")]
         labelToId = {str(x[0]): i for i, x in enumerate(label_map)}
         # print "label2id=",labelToId
         idToLabel = [x[1] for x in label_map]
         # print "id2label=",idToLabel
         cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         # print "cols",cols
-        data = {dataset: self.readDaphFiles(files[dataset], cols, labelToId)
-                for dataset in ('train', 'test')}
+        data = {
+            dataset: self.readDaphFiles(files[dataset], cols, labelToId)
+            for dataset in ("train", "test")
+        }
         return data, idToLabel
 
     def readDaphFiles(self, filelist, cols, labelToId):
         data = []
         labels = []
         for i, filename in enumerate(filelist):
-            print('Reading file %d of %d' % (i+1, len(filelist)))
-            with open('./dataset/%s' % filename, 'r') as f:
-                #print "f",f
-                reader = csv.reader(f, delimiter=' ')
+            print("Reading file %d of %d" % (i + 1, len(filelist)))
+            with open("./dataset/%s" % filename, "r") as f:
+                # print "f",f
+                reader = csv.reader(f, delimiter=" ")
                 for line in reader:
-                    #print "line=",line
+                    # print "line=",line
                     elem = []
-                    #not including the non related activity
+                    # not including the non related activity
                     if line[10] == "0":
                         continue
                     for ind in cols:
-                        #print "ind=",ind
+                        # print "ind=",ind
                         if ind == 10:
                             # print "line[ind]",line[ind]
                             if line[ind] == "0":
                                 continue
                         elem.append(line[ind])
-                    if sum([x == 'NaN' for x in elem]) == 0:
+                    if sum([x == "NaN" for x in elem]) == 0:
                         data.append([float(x) / 1000 for x in elem[:-1]])
                         labels.append(labelToId[elem[-1]])
-        
-        return {'inputs': np.asarray(data), 'targets': np.asarray(labels, dtype=int)+1}
+
+        return {
+            "inputs": np.asarray(data),
+            "targets": np.asarray(labels, dtype=int) + 1,
+        }
 
     def readOpportunity(self):
         files = {
-            'train': ['S1-ADL1.dat','S1-ADL3.dat', 'S1-ADL4.dat', 'S1-ADL5.dat', 'S1-Drill.dat', 'S2-ADL1.dat', 'S2-ADL2.dat', 'S2-ADL5.dat', 'S2-Drill.dat', 'S3-ADL1.dat', 'S3-ADL2.dat', 'S3-ADL5.dat', 'S3-Drill.dat', 'S4-ADL1.dat', 'S4-ADL2.dat', 'S4-ADL3.dat', 'S4-ADL4.dat', 'S4-ADL5.dat', 'S4-Drill.dat'],
-            'test': ['S2-ADL3.dat', 'S2-ADL4.dat','S3-ADL3.dat', 'S3-ADL4.dat']
+            "train": [
+                "S1-ADL1.dat",
+                "S1-ADL3.dat",
+                "S1-ADL4.dat",
+                "S1-ADL5.dat",
+                "S1-Drill.dat",
+                "S2-ADL1.dat",
+                "S2-ADL2.dat",
+                "S2-ADL5.dat",
+                "S2-Drill.dat",
+                "S3-ADL1.dat",
+                "S3-ADL2.dat",
+                "S3-ADL5.dat",
+                "S3-Drill.dat",
+                "S4-ADL1.dat",
+                "S4-ADL2.dat",
+                "S4-ADL3.dat",
+                "S4-ADL4.dat",
+                "S4-ADL5.dat",
+                "S4-Drill.dat",
+            ],
+            "test": ["S2-ADL3.dat", "S2-ADL4.dat", "S3-ADL3.dat", "S3-ADL4.dat"],
         }
-        #names are from label_legend.txt of Opportunity dataset
-        #except 0-ie Other, which is an additional label
+        # names are from label_legend.txt of Opportunity dataset
+        # except 0-ie Other, which is an additional label
         label_map = [
-            (0,      'Other'),
-            (406516, 'Open Door 1'),
-            (406517, 'Open Door 2'),
-            (404516, 'Close Door 1'),
-            (404517, 'Close Door 2'),
-            (406520, 'Open Fridge'),
-            (404520, 'Close Fridge'),
-            (406505, 'Open Dishwasher'),
-            (404505, 'Close Dishwasher'),
-            (406519, 'Open Drawer 1'),
-            (404519, 'Close Drawer 1'),
-            (406511, 'Open Drawer 2'),
-            (404511, 'Close Drawer 2'),
-            (406508, 'Open Drawer 3'),
-            (404508, 'Close Drawer 3'),
-            (408512, 'Clean Table'),
-            (407521, 'Drink from Cup'),
-            (405506, 'Toggle Switch')
+            (0, "Other"),
+            (406516, "Open Door 1"),
+            (406517, "Open Door 2"),
+            (404516, "Close Door 1"),
+            (404517, "Close Door 2"),
+            (406520, "Open Fridge"),
+            (404520, "Close Fridge"),
+            (406505, "Open Dishwasher"),
+            (404505, "Close Dishwasher"),
+            (406519, "Open Drawer 1"),
+            (404519, "Close Drawer 1"),
+            (406511, "Open Drawer 2"),
+            (404511, "Close Drawer 2"),
+            (406508, "Open Drawer 3"),
+            (404508, "Close Drawer 3"),
+            (408512, "Clean Table"),
+            (407521, "Drink from Cup"),
+            (405506, "Toggle Switch"),
         ]
         labelToId = {str(x[0]): i for i, x in enumerate(label_map)}
         idToLabel = [x[1] for x in label_map]
 
         cols = [
-            37, 38, 39, 40, 41, 42, 43, 44, 45, 50, 51, 52, 53, 54, 55, 56, 57, 58,63, 64, 65, 66, 67, 68, 69, 70, 71, 76, 77, 78, 79, 80, 81, 82, 83, 84,
-            89, 90, 91, 92, 93, 94, 95, 96, 97, 102, 103, 104, 105, 106, 107, 108,109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
-            124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 249
-            ]
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127,
+            128,
+            129,
+            130,
+            131,
+            132,
+            133,
+            249,
+        ]
 
-        data = {dataset: self.readOpportunityFiles(files[dataset], cols, labelToId)
-                for dataset in ('train', 'test')}
+        data = {
+            dataset: self.readOpportunityFiles(files[dataset], cols, labelToId)
+            for dataset in ("train", "test")
+        }
 
         return data, idToLabel
 
-#this is from https://github.com/nhammerla/deepHAR/tree/master/data and it is an opportunity Challenge reader. It is a python translation one
-#for the official one provided by the dataset publishers in Matlab.
+    # this is from https://github.com/nhammerla/deepHAR/tree/master/data and it is an opportunity Challenge reader. It is a python translation one
+    # for the official one provided by the dataset publishers in Matlab.
     def readOpportunityFiles(self, filelist, cols, labelToId):
         data = []
         labels = []
         for i, filename in enumerate(filelist):
-            print('Reading file %d of %d' % (i+1, len(filelist)))
-            with open('./dataset/%s' % filename, 'r') as f:
-                reader = csv.reader(f, delimiter=' ')
+            print("Reading file %d of %d" % (i + 1, len(filelist)))
+            with open("./dataset/%s" % filename, "r") as f:
+                reader = csv.reader(f, delimiter=" ")
                 for line in reader:
                     elem = []
                     for ind in cols:
                         elem.append(line[ind])
-                    if sum([x == 'NaN' for x in elem]) == 0:
+                    if sum([x == "NaN" for x in elem]) == 0:
                         data.append([float(x) / 1000 for x in elem[:-1]])
                         labels.append(labelToId[elem[-1]])
 
-        return {'inputs': np.asarray(data), 'targets': np.asarray(labels, dtype=int)+1}
-
+        return {
+            "inputs": np.asarray(data),
+            "targets": np.asarray(labels, dtype=int) + 1,
+        }
 
     def readSphere(self):
         files = {
-            'train': ['00001','00002', '00003', '00004', '00005', '00006', '00007', '00008'],
-            'test' : [ '00009', '00010']
+            "train": [
+                "00001",
+                "00002",
+                "00003",
+                "00004",
+                "00005",
+                "00006",
+                "00007",
+                "00008",
+            ],
+            "test": ["00009", "00010"]
             # 'test': ['00011','00012','00013','00014','00015','00016','00017','00018','00019','00020','00021','00022','00023','00024','00025','00026','00027',
             # '00028','00029','00030','00031','00032','00033','00034','00035','00036','00037','00038','00039','00040','00041','00042','00043','00044','00045',
             # '00046','00047','00048','00049','00050','00051','00052','00053','00054','00055','00056','00057','00058','00059','00060','00061','00062','00063',
@@ -313,75 +503,160 @@ class data_reader:
         }
 
         label_map = [
-            (0,  'a_ascend'),
-            (1,  'a_descend'),
-            (2,  'a_jump'),
-            (3,  'a_loadwalk'),
-            (4,  'a_walk'),
-            (5,  'p_bent'),
-            (6,  'p_kneel'),
-            (7,  'p_lie'),
-            (8,  'p_sit'),
-            (9,  'p_squat'),
-            (10, 'p_stand'),
-            (11, 't_bend'),
-            (12, 't_kneel_stand'),
-            (13, 't_lie_sit'),
-            (14, 't_sit_lie'),
-            (15, 't_sit_stand'),
-            (16, 't_stand_kneel'),
-            (17, 't_stand_sit'),
-            (18, 't_straighten'),
-            (19, 't_turn')
+            (0, "a_ascend"),
+            (1, "a_descend"),
+            (2, "a_jump"),
+            (3, "a_loadwalk"),
+            (4, "a_walk"),
+            (5, "p_bent"),
+            (6, "p_kneel"),
+            (7, "p_lie"),
+            (8, "p_sit"),
+            (9, "p_squat"),
+            (10, "p_stand"),
+            (11, "t_bend"),
+            (12, "t_kneel_stand"),
+            (13, "t_lie_sit"),
+            (14, "t_sit_lie"),
+            (15, "t_sit_stand"),
+            (16, "t_stand_kneel"),
+            (17, "t_stand_sit"),
+            (18, "t_straighten"),
+            (19, "t_turn"),
         ]
-        
+
         labelToId = {str(x[0]): i for i, x in enumerate(label_map)}
         # print ("label2id=",labelToId)
         idToLabel = [x[1] for x in label_map]
         # print ("idToLabel=",idToLabel)
         # colums of the merged file (ie video_hall+video_living+video_kitchen+accelerometer+maxarg_target)
         # the strict order is : accelerometer_data, video_hall_data, living_room_data, target_value
-        cols = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]
+        cols = [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+        ]
 
         # cols_acceleration = [1, 2, 3, 4, 5, 6, 7]
         # cols_video = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
-        data = {dataset: self.readSphereFiles(files[dataset],cols,labelToId,idToLabel)
-                for dataset in ('train', 'test')}
+        data = {
+            dataset: self.readSphereFiles(files[dataset], cols, labelToId, idToLabel)
+            for dataset in ("train", "test")
+        }
 
         return data, idToLabel
 
-# partial code was taken from :https://github.com/IRC-SPHERE/sphere-challenge/blob/master/visualise_data.py
-    def readSphereFiles(self, filelist, cols, labelToId,idToLabel):
+    # partial code was taken from :https://github.com/IRC-SPHERE/sphere-challenge/blob/master/visualise_data.py
+    def readSphereFiles(self, filelist, cols, labelToId, idToLabel):
         data = []
         labels = []
 
-        mapping = {'a_ascend': 0, 'a_descend': 1, 'a_jump': 2, 'a_loadwalk': 3, 'a_walk': 4, 'p_bent': 5, 'p_kneel': 6, 'p_lie': 7, 'p_sit': 8,
-             'p_squat': 9, 'p_stand': 10, 't_bend': 11, 't_kneel_stand': 12, 't_lie_sit': 13, 't_sit_lie': 14, 't_sit_stand': 15, 't_stand_kneel': 16, 
-             't_stand_sit': 17,'t_straighten': 18, 't_turn': 19}
+        mapping = {
+            "a_ascend": 0,
+            "a_descend": 1,
+            "a_jump": 2,
+            "a_loadwalk": 3,
+            "a_walk": 4,
+            "p_bent": 5,
+            "p_kneel": 6,
+            "p_lie": 7,
+            "p_sit": 8,
+            "p_squat": 9,
+            "p_stand": 10,
+            "t_bend": 11,
+            "t_kneel_stand": 12,
+            "t_lie_sit": 13,
+            "t_sit_lie": 14,
+            "t_sit_stand": 15,
+            "t_stand_kneel": 16,
+            "t_stand_sit": 17,
+            "t_straighten": 18,
+            "t_turn": 19,
+        }
 
         # mapping2 = {0:'a_ascend',  1:'a_descend',  2:'a_jump',  3:'a_loadwalk',  4:'a_walk',  5:'p_bent',  6:'p_kneel',  7:'p_lie',  8:'p_sit',
-        #       9:'p_squat',  10:'p_stand',  11:'t_bend',  12:'t_kneel_stand',  13:'t_lie_sit',  14:'t_sit_lie',  15:'t_sit_stand',  16:'t_stand_kneel', 
+        #       9:'p_squat',  10:'p_stand',  11:'t_bend',  12:'t_kneel_stand',  13:'t_lie_sit',  14:'t_sit_lie',  15:'t_sit_stand',  16:'t_stand_kneel',
         #       17:'t_stand_sit', 18:'t_straighten', 19: 't_turn'}
         for i, filename in enumerate(filelist):
-            path = './train/%s/'%filename
-            meta_root = './metadata/'
-            video_cols = json.load(open(os.path.join(meta_root, 'video_feature_names.json')))
-            centre_2d = video_cols['centre_2d']
-            bb_2d = video_cols['bb_2d']
-            centre_3d = video_cols['centre_3d']
-            bb_3d = video_cols['bb_3d']
-            print('Reading file %d of %d'%(i+1,len(filelist)))
-            meta = json.load(open(os.path.join(path, 'meta.json')))
-            acceleration_keys = json.load(open(os.path.join(meta_root, 'accelerometer_axes.json')))
-            rssi_keys = json.load(open(os.path.join(meta_root, 'access_point_names.json')))
-            video_names = json.load(open(os.path.join(meta_root, 'video_locations.json')))
-            pir_names = json.load(open(os.path.join(meta_root, 'pir_locations.json')))
-            location_targets = json.load(open(os.path.join(meta_root, 'rooms.json')))
-            activity_targets = json.load(open(os.path.join(meta_root, 'annotations.json')))
-            
-            accel = load_wearable(path,acceleration_keys,rssi_keys)
-            vid = load_video(path,video_names)
+            path = "./train/%s/" % filename
+            meta_root = "./metadata/"
+            video_cols = json.load(
+                open(os.path.join(meta_root, "video_feature_names.json"))
+            )
+            centre_2d = video_cols["centre_2d"]
+            bb_2d = video_cols["bb_2d"]
+            centre_3d = video_cols["centre_3d"]
+            bb_3d = video_cols["bb_3d"]
+            print("Reading file %d of %d" % (i + 1, len(filelist)))
+            meta = json.load(open(os.path.join(path, "meta.json")))
+            acceleration_keys = json.load(
+                open(os.path.join(meta_root, "accelerometer_axes.json"))
+            )
+            rssi_keys = json.load(
+                open(os.path.join(meta_root, "access_point_names.json"))
+            )
+            video_names = json.load(
+                open(os.path.join(meta_root, "video_locations.json"))
+            )
+            pir_names = json.load(open(os.path.join(meta_root, "pir_locations.json")))
+            location_targets = json.load(open(os.path.join(meta_root, "rooms.json")))
+            activity_targets = json.load(
+                open(os.path.join(meta_root, "annotations.json"))
+            )
+
+            accel = load_wearable(path, acceleration_keys, rssi_keys)
+            vid = load_video(path, video_names)
             pir = load_environmental(path)
             annot = load_annotations(path)
             targ = load_targets(path)
@@ -390,24 +665,23 @@ class data_reader:
             # vid = pd.DataFrame.from_dict(orient='index',data = vid)
             # vid = vid.dropna(how='any')
 
-            #we have read the whole train set for the current file
-            #now we trim off all unlabeled target instances
-            targ = targ.dropna(how='any')
-            #we feel the accelerometer NaN values with zero (mean impute would not make much sense)
+            # we have read the whole train set for the current file
+            # now we trim off all unlabeled target instances
+            targ = targ.dropna(how="any")
+            # we feel the accelerometer NaN values with zero (mean impute would not make much sense)
             accel = accel.fillna(0)
             # print(i)
             # print(filename)
-            
-            #we get the target label for each instance, which would be the argmax, of the targe probability distribution
+
+            # we get the target label for each instance, which would be the argmax, of the targe probability distribution
             targLabel = copy.deepcopy(targ)
             targLabel.drop(targLabel.columns[[0, 1]], axis=1, inplace=True)
-            #we create a target column, with the corresponding argmax targets
-            targ['target'] = targLabel.idxmax(axis=1)
-            #delete the probability distribution columns
+            # we create a target column, with the corresponding argmax targets
+            targ["target"] = targLabel.idxmax(axis=1)
+            # delete the probability distribution columns
             for activity in idToLabel:
-            	del targ[activity]
+                del targ[activity]
             # print(targ)
-            
 
             # print("accel")
             # print(accel.keys())
@@ -415,14 +689,14 @@ class data_reader:
             # print(vid['hallway'].keys())
             # print("theEND")
 
-            accel.insert(0, 't', 0)
-            accel['t'] = accel.index
-            vid['hallway']['t']= vid['hallway'].index
-            vid['living_room']['t'] = vid['living_room'].index 
-            vid['kitchen']['t'] = vid['kitchen'].index 
-            merged = pd.merge(accel,vid['hallway'],how='outer',on='t')
-            merged = pd.merge(merged,vid['living_room'],how='outer',on='t')
-            merged = pd.merge(merged,vid['kitchen'],how='outer',on='t')
+            accel.insert(0, "t", 0)
+            accel["t"] = accel.index
+            vid["hallway"]["t"] = vid["hallway"].index
+            vid["living_room"]["t"] = vid["living_room"].index
+            vid["kitchen"]["t"] = vid["kitchen"].index
+            merged = pd.merge(accel, vid["hallway"], how="outer", on="t")
+            merged = pd.merge(merged, vid["living_room"], how="outer", on="t")
+            merged = pd.merge(merged, vid["kitchen"], how="outer", on="t")
 
             # print ("accel.shape")
             # print (accel.shape)
@@ -434,16 +708,60 @@ class data_reader:
             # print (vid['kitchen'].shape)
 
             # Rename the columns  appropriately
-            merged.columns = ['time', 'x', 'y','z', 'Kitchen_AP', 'Lounge_AP', 'Upstairs_AP',
-            'Study_AP',  'centre_2d_x_hall',  'centre_2d_y_hall' , 'bb_2d_br_x_hall'  ,'bb_2d_br_y_hall',
-            'bb_2d_tl_x_hall' , 'bb_2d_tl_y_hall' , 'centre_3d_x_hall' , 'centre_3d_y_hall' , 'centre_3d_z_hall',
-            'bb_3d_brb_x_hall' , 'bb_3d_brb_y_hall' , 'bb_3d_brb_z_hall' , 'bb_3d_flt_x_hall' , 'bb_3d_flt_y_hall',
-            'bb_3d_flt_z_hall' , 'centre_2d_x_living' , 'centre_2d_y_living' , 'bb_2d_br_x_living' , 'bb_2d_br_y_living',
-            'bb_2d_tl_x_living' , 'bb_2d_tl_y_living' , 'centre_3d_x_living' , 'centre_3d_y_living' , 'centre_3d_z_living',
-            'bb_3d_brb_x_living' , 'bb_3d_brb_y_living' ,'bb_3d_brb_z_living' , 'bb_3d_flt_x_living' , 'bb_3d_flt_y_living',
-            'bb_3d_flt_z_living' , 'centre_2d_x_kitchen' , 'centre_2d_y_kitchen' , 'bb_2d_br_x_kitchen' , 'bb_2d_br_y_kitchen',
-            'bb_2d_tl_x_kitchen' , 'bb_2d_tl_y_kitchen' , 'centre_3d_x_kitchen' , 'centre_3d_y_kitchen' , 'centre_3d_z_kitchen' , 'bb_3d_brb_x_kitchen',
-            'bb_3d_brb_y_kitchen' , 'bb_3d_brb_z_kitchen' , 'bb_3d_flt_x_kitchen' , 'bb_3d_flt_y_kitchen' , 'bb_3d_flt_z_kitchen',
+            merged.columns = [
+                "time",
+                "x",
+                "y",
+                "z",
+                "Kitchen_AP",
+                "Lounge_AP",
+                "Upstairs_AP",
+                "Study_AP",
+                "centre_2d_x_hall",
+                "centre_2d_y_hall",
+                "bb_2d_br_x_hall",
+                "bb_2d_br_y_hall",
+                "bb_2d_tl_x_hall",
+                "bb_2d_tl_y_hall",
+                "centre_3d_x_hall",
+                "centre_3d_y_hall",
+                "centre_3d_z_hall",
+                "bb_3d_brb_x_hall",
+                "bb_3d_brb_y_hall",
+                "bb_3d_brb_z_hall",
+                "bb_3d_flt_x_hall",
+                "bb_3d_flt_y_hall",
+                "bb_3d_flt_z_hall",
+                "centre_2d_x_living",
+                "centre_2d_y_living",
+                "bb_2d_br_x_living",
+                "bb_2d_br_y_living",
+                "bb_2d_tl_x_living",
+                "bb_2d_tl_y_living",
+                "centre_3d_x_living",
+                "centre_3d_y_living",
+                "centre_3d_z_living",
+                "bb_3d_brb_x_living",
+                "bb_3d_brb_y_living",
+                "bb_3d_brb_z_living",
+                "bb_3d_flt_x_living",
+                "bb_3d_flt_y_living",
+                "bb_3d_flt_z_living",
+                "centre_2d_x_kitchen",
+                "centre_2d_y_kitchen",
+                "bb_2d_br_x_kitchen",
+                "bb_2d_br_y_kitchen",
+                "bb_2d_tl_x_kitchen",
+                "bb_2d_tl_y_kitchen",
+                "centre_3d_x_kitchen",
+                "centre_3d_y_kitchen",
+                "centre_3d_z_kitchen",
+                "bb_3d_brb_x_kitchen",
+                "bb_3d_brb_y_kitchen",
+                "bb_3d_brb_z_kitchen",
+                "bb_3d_flt_x_kitchen",
+                "bb_3d_flt_y_kitchen",
+                "bb_3d_flt_z_kitchen",
             ]
             # pd.set_option('display.max_columns', 500)
             # print("merged.keys()")
@@ -454,18 +772,17 @@ class data_reader:
             # print(merged.ix[:5, :54])
             # print()
 
-            #concatinate the target file labels and start,end tuples with the accelerometer timeseries.
+            # concatinate the target file labels and start,end tuples with the accelerometer timeseries.
             # print("going for the sql table creation")
-            conn = sqlite3.connect(':memory:')
-            targ.to_sql('targ',conn,index=True)
-            merged.to_sql('merged',conn,index=True)
+            conn = sqlite3.connect(":memory:")
+            targ.to_sql("targ", conn, index=True)
+            merged.to_sql("merged", conn, index=True)
             # vid['hallway'].to_sql('hall',conn,index=True)
             # vid['living_room'].to_sql('living',conn,index=True)
             # vid['kitchen'].to_sql('kitchen',conn,index=True)
             # print("just did the sql table creation")
 
-            
-            qry = '''
+            qry = """
             select 
             time, x, y,z, Kitchen_AP, Lounge_AP, Upstairs_AP,
             Study_AP,  centre_2d_x_hall,  centre_2d_y_hall , bb_2d_br_x_hall  ,bb_2d_br_y_hall,
@@ -479,94 +796,103 @@ class data_reader:
             bb_3d_brb_y_kitchen , bb_3d_brb_z_kitchen , bb_3d_flt_x_kitchen , bb_3d_flt_y_kitchen , bb_3d_flt_z_kitchen, targ.target
 
             from merged join targ on merged.time between targ.start and targ.end
-            '''
+            """
             # pd.set_option('display.max_columns', 500)
             # print("doing the query")
-            res = pd.read_sql_query(qry,conn)
+            res = pd.read_sql_query(qry, conn)
             # print("query done")
             # print("res.shape")
             # print(res.shape)
             # print("res")
             # print(res.ix[:5, :100])
-            
+
             res["target"].replace(mapping, inplace=True)
             res = res.fillna(0)
             # print("res_after_mapping")
             # print(res.ix[:5, :100])
-            
+
             conn.close()
-            
-            
+
             for index, line in res.iterrows():
-            	elem = []
-            	for ind in cols:
-            		elem.append(line[ind])
-            	if sum([x=='NaN' for x in elem]) == 0:
-            		data.append([float(x) / 1000 for x in elem[:-1]])
-            		labels.append(labelToId[str(int(elem[-1]))])
-            	
-        
-        return {'inputs': np.asarray(data), 'targets': np.asarray(labels, dtype=int)+1}
-    
+                elem = []
+                for ind in cols:
+                    elem.append(line[ind])
+                if sum([x == "NaN" for x in elem]) == 0:
+                    data.append([float(x) / 1000 for x in elem[:-1]])
+                    labels.append(labelToId[str(int(elem[-1]))])
+
+        return {
+            "inputs": np.asarray(data),
+            "targets": np.asarray(labels, dtype=int) + 1,
+        }
+
+
 # partial code was taken from :https://github.com/IRC-SPHERE/sphere-challenge/blob/master/visualise_data.py
-def load_wearable(path,acceleration_keys,rssi_keys):
-    accel_rssi = pd.read_csv(os.path.join(path, 'acceleration.csv'), index_col='t')
+def load_wearable(path, acceleration_keys, rssi_keys):
+    accel_rssi = pd.read_csv(os.path.join(path, "acceleration.csv"), index_col="t")
     acceleration = accel_rssi[acceleration_keys]
     rssi = pd.DataFrame(index=acceleration.index)
     for kk in rssi_keys:
         if kk in accel_rssi:
             rssi[kk] = accel_rssi[kk]
-        
+
         else:
             rssi[kk] = np.nan
             accel_rssi[kk] = np.nan
-    
+
     accel_rssi = accel_rssi
     return accel_rssi
 
+
 def load_environmental(path):
-    pir = pd.read_csv(os.path.join(path, 'pir.csv'))
+    pir = pd.read_csv(os.path.join(path, "pir.csv"))
     return pir
 
-def load_video(path,video_names):
+
+def load_video(path, video_names):
     video = dict()
     for location in video_names:
-        filename = os.path.join(path, 'video_{}.csv'.format(location))
-        video[location] = pd.read_csv(filename, index_col='t')
+        filename = os.path.join(path, "video_{}.csv".format(location))
+        video[location] = pd.read_csv(filename, index_col="t")
     return video
+
 
 def load_annotations(path):
     num_annotators = 0
-    
+
     annotations = []
     locations = []
 
-    targets = None 
+    targets = None
 
-    targets_file_name = os.path.join(path, 'targets.csv')
-    if os.path.exists(targets_file_name): 
+    targets_file_name = os.path.join(path, "targets.csv")
+    if os.path.exists(targets_file_name):
         targets = pd.read_csv(targets_file_name)
-    
+
     while True:
         annotation_filename = "{}/annotations_{}.csv".format(path, num_annotators)
         location_filename = "{}/location_{}.csv".format(path, num_annotators)
-        
+
         if not os.path.exists(annotation_filename):
             break
-        
+
         annotations.append(pd.read_csv(annotation_filename))
         locations.append(pd.read_csv(location_filename))
-        
+
         num_annotators += 1
-    
+
     annotations_loaded = num_annotators != 0
     return annotations
+
+
 def load_targets(path):
     targets = None
-    targets_file_name = os.path.join(path, 'targets.csv')
-    if os.path.exists(targets_file_name): 
+    targets_file_name = os.path.join(path, "targets.csv")
+    if os.path.exists(targets_file_name):
         targets = pd.read_csv(targets_file_name)
     return targets
+
+
 if __name__ == "__main__":
-    print('Reading %s ' % (sys.argv[1]))
+    print("Reading %s " % (sys.argv[1]))
     dr = data_reader(sys.argv[1])
