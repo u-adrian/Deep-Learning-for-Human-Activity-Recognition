@@ -1,6 +1,7 @@
+import json
+
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy import stats
 import tensorflow.compat.v1 as tf
 import time
@@ -11,11 +12,14 @@ import sys
 import matplotlib.pyplot as plt
 import math
 
+from sup_augmentations import do_augmentations
+
 tf.disable_v2_behavior()
 
 #%matplotlib inline
 plt.style.use("ggplot")
 
+print("------------------Test01")     # TODO Delete
 
 # FUNCTION DECLARATION
 
@@ -458,7 +462,16 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 # TRAINING THE MODEL
 loss_over_time = np.zeros(training_epochs)
 
-with tf.Session() as session:
+config = tf.ConfigProto(
+        device_count = {'GPU': 0}
+)
+
+loss_dict = {
+    "Train_Accuracy": [],
+    "Train_Loss": [],
+    "Test_Accuracy": [],
+}
+with tf.Session(config=config) as session:
 
     # merged_summary_op = tf.summary.merge_all()
     # summary_writer = tf.summary.FileWriter("./", session.graph)
@@ -471,6 +484,8 @@ with tf.Session() as session:
             offset = (b * batch_size) % (train_y.shape[0] - batch_size)
             batch_x = train_x[offset : (offset + batch_size), :, :, :]
             batch_y = train_y[offset : (offset + batch_size), :]
+
+            batch_x, batch_y = do_augmentations(batch_x, batch_y)
 
             # print "batch_x shape =",batch_x.shape
             # print "batch_y shape =",batch_y.shape
@@ -488,32 +503,34 @@ with tf.Session() as session:
             )
             cost_history = np.append(cost_history, c)
             # summary_writer.add_summary(summary,global_step.eval(session=session))
+        mean_train_loss = np.mean(cost_history)
+        train_accuracy = session.run(
+                                        accuracy,
+                                        feed_dict={X: train_x, Y: train_y, dropout_1: 1 - 0.1, dropout_2: 1 - 0.25, dropout_3: 1 - 0.5}
+                                     )
+        test_accuracy = session.run(
+                accuracy,
+                feed_dict={X: test_x, Y: test_y, dropout_1: 1, dropout_2: 1, dropout_3: 1},
+            )
+
+        loss_dict["Train_Loss"].append(str(mean_train_loss))
+        loss_dict["Train_Accuracy"].append(str(train_accuracy))
+        loss_dict["Test_Accuracy"].append(str(test_accuracy))
+
+        with open("C:/Dev/Smart_Data/test/test.json", "w") as file:
+            json.dump(loss_dict, file)
+
         print(
             "Epoch: ",
             epoch,
             " Training Loss: ",
-            np.mean(cost_history),
+            mean_train_loss,
             " Training Accuracy: ",
-            session.run(
-                accuracy,
-                feed_dict={
-                    X: train_x,
-                    Y: train_y,
-                    dropout_1: 1 - 0.1,
-                    dropout_2: 1 - 0.25,
-                    dropout_3: 1 - 0.5,
-                },
-            ),
+            train_accuracy,
+            "Testing Accuracy:",
+            test_accuracy,
         )
-        loss_over_time[epoch] = np.mean(cost_history)
 
-    print(
-        "Testing Accuracy:",
-        session.run(
-            accuracy,
-            feed_dict={X: test_x, Y: test_y, dropout_1: 1, dropout_2: 1, dropout_3: 1},
-        ),
-    )
     y_p = tf.argmax(y_conv, 1)
     val_accuracy, y_pred = session.run(
         [accuracy, y_p],
@@ -559,6 +576,9 @@ with tf.Session() as session:
     # plt.xlabel("Epoch")
     # plt.ylabel("Loss")
     # plt.show()
+    with open("C:/Dev/Smart_Data/test/test.json", "w") as file:
+        json.dump(loss_dict, file)
+
 
     #######################################################################################
     #### micro- macro- weighted explanation ###############################################
