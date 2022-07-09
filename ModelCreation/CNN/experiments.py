@@ -1,3 +1,4 @@
+import argparse
 import json
 import os.path
 
@@ -8,15 +9,15 @@ from ModelCreation.CNN.sup_augmentations import aug_noise, aug_convolve, aug_cro
     aug_quantize
 
 
-def hyper_param_eval(aug_func, name, path):
-    output_path_experiment = os.path.join(path, name)
+def hyper_param_eval(aug_func, name, output_path, data_path, dataset_name):
+    output_path_experiment = os.path.join(output_path, name)
     prob_list = [0.2, 0.5, 0.8]
 
     for i, prob in enumerate(prob_list):
         def aug_function(b_x, b_y):
             return aug_func(b_x, b_y, prob)
 
-        loss_dict, score_dict, confusion_matrix = cnn_execute("opp", aug_function=aug_function)
+        loss_dict, score_dict, confusion_matrix = cnn_execute(dataset_name, data_path=data_path, aug_function=aug_function)
         output_path_prob = os.path.join(output_path_experiment, f"test_{i:02d}")
 
         os.makedirs(output_path_prob, exist_ok=True)
@@ -34,7 +35,19 @@ def hyper_param_eval(aug_func, name, path):
         with open(output_path_matrix, "wb") as file:
             np.save(file, confusion_matrix)
 
-def main(path):
+
+def main(parser: argparse.ArgumentParser):
+    parser.add_argument("--dataset", choices=["opp", "dap", "pa2"], default="opp")
+    parser.add_argument("--data_path", type=str,
+                        default=os.path.join(os.path.expanduser("~"), "datasets", "har_dataset"))
+    parser.add_argument("--output_path", type=str,
+                        default=os.path.join(os.path.expanduser("~"), "output", "human_activity"))
+    args = parser.parse_args()
+
+    output_path = args.output_path
+    data_path = args.data_path
+    dataset_name = args.dataset
+
     augmentation_dict = {
         "noise": aug_noise,
         "convolve": aug_convolve,
@@ -48,9 +61,9 @@ def main(path):
     for augmentation_name in augmentation_dict:
         print(f"Starting hyperparameter search for '{augmentation_name}'")
         augmentation_func = augmentation_dict[augmentation_name]
-        hyper_param_eval(aug_func=augmentation_func, name=augmentation_name, path=path)
+        hyper_param_eval(aug_func=augmentation_func, name=augmentation_name, output_path=output_path,
+                         data_path=data_path, dataset_name=dataset_name)
 
 
 if __name__ == "__main__":
-    main(path="C:/Dev/Smart_Data/E3")
-    #hyper_param_eval(aug_func=aug_noise, name="Exp_Noise", path="C:/Dev/Smart_Data/E3")
+    main(argparse.ArgumentParser())
