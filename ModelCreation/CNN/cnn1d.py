@@ -1,5 +1,4 @@
-import json
-
+import argparse
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -12,8 +11,6 @@ import sys
 import matplotlib.pyplot as plt
 import math
 
-from sup_augmentations import do_augmentations
-
 tf.disable_v2_behavior()
 
 #%matplotlib inline
@@ -21,11 +18,6 @@ plt.style.use("ggplot")
 
 
 # FUNCTION DECLARATION
-
-# def feature_normalize(dataset):
-#     mu = np.mean(dataset,axis = 0)
-#     sigma = np.std(dataset,axis = 0)
-#     return (dataset - mu)/sigma
 
 
 def variable_summaries(var, name):
@@ -56,13 +48,6 @@ def segment_opp(x_train, y_train, window_size):
             labels[i_label] = m[0]
             i_label += 1
             i_segment += 1
-            # print "x_start_end",x_train[start:end]
-            # segs =  x_train[start:end]
-            # segments = np.concatenate((segments,segs))
-            # segments = np.vstack((segments,x_train[start:end]))
-            # segments = np.vstack([segments,segs])
-            # segments = np.vstack([segments,x_train[start:end]])
-            # labels = np.append(labels,stats.mode(y_train[start:end]))
     return segments, labels
 
 
@@ -131,7 +116,7 @@ def max_pool(x, kernel_size, stride_size):
     )
 
 
-def cnn_execute(dataset_name, aug_function=None):
+def cnn_execute(dataset_name, data_path, aug_function=None):
     # MAIN ()
 
     print("starting...")
@@ -139,39 +124,15 @@ def cnn_execute(dataset_name, aug_function=None):
 
     # DATA PREPROCESSING
 
-    # dataset = read_data('WISDM_ar_v1.1/WISDM_at_v2.0_raw.txt')
-    # print "read data"
-    # dataset['x-axis'] = feature_normalize(dataset['x-axis'])
-    # print "normalized x-axis"
-    # dataset['y-axis'] = feature_normalize(dataset['y-axis'])
-    # print "normalized y-axis"
-    # dataset['z-axis'] = feature_normalize(dataset['z-axis'])
-    # print "normalized z-axis"
-
-    # plotting normalized features
-    # for activity in np.unique(dataset["activity"]):
-    #     subset = dataset[dataset["activity"] == activity][:180]
-    #     plot_activity(activity,subset)
-
     dataset = dataset_name
     if dataset == "opp":
-        path = os.path.join(
-            os.path.expanduser("~"), "Downloads", "OpportunityUCIDataset", "opportunity.h5"
-        )
+        path = os.path.join(data_path, "OpportunityUCIDataset", "opportunity.h5")
     elif dataset == "dap":
-        path = os.path.join(
-            os.path.expanduser("~"),
-            "Downloads",
-            "dataset_fog_release",
-            "dataset_fog_release",
-            "daphnet.h5",
-        )
+        path = os.path.join(data_path, "dataset_fog_release", "daphnet.h5")
     elif dataset == "pa2":
-        path = ""
+        path = os.path.join(data_path, "PAMAP2_Dataset", "pamap2.h5")
     elif dataset == "sph":
-        path = os.path.join(
-            os.path.expanduser("~"), "Downloads", "SphereDataset", "sphere.h5"
-        )
+        path = os.path.join(data_path, "SphereDataset", "sphere.h5")
     else:
         print("Dataset not supported yet")
         sys.exit()
@@ -213,7 +174,6 @@ def cnn_execute(dataset_name, aug_function=None):
 
     print(np.unique(y_train))
     print(np.unique(y_test))
-    unq = np.unique(y_test)
 
     input_width = 23
     if dataset == "opp":
@@ -248,11 +208,6 @@ def cnn_execute(dataset_name, aug_function=None):
     print("train_y shape =", train_y.shape)
     print("test_x shape =", test_x.shape)
     print("test_y shape =", test_y.shape)
-
-    # train_y = np.asarray(pd.get_dummies(train_y), dtype = np.int8)
-    # print "train_y[1]=",train_y[1]
-
-    # test_y = one_hot(test_y)
 
     # http://fastml.com/how-to-use-pd-dot-get-dummies-with-the-test-set/
 
@@ -345,17 +300,6 @@ def cnn_execute(dataset_name, aug_function=None):
 
     h_pool1 = max_pool(h_conv1, kernel_size_1, stride_size)
 
-    # variable_summaries(W_conv1)
-    # variable_summaries(b_conv1)
-    # tf.summary.histogram('h_pool1', h_pool1)
-    # tf.summary.histogram('h_pool1/sparsity', tf.nn.zero_fraction(h_pool1))
-
-    print("hidden layer 1 shape")
-    print("W_conv1 shape =", W_conv1.get_shape())
-    print("b_conv1 shape =", b_conv1.get_shape())
-    print("h_conv1 shape =", h_conv1.get_shape())
-    print("h_pool1 shape =", h_pool1.get_shape())
-
     # hidden layer 2
     W_conv2 = weight_variable([1, kernel_size_2, depth_1, depth_2])
     b_conv2 = bias_variable([depth_2])
@@ -365,52 +309,15 @@ def cnn_execute(dataset_name, aug_function=None):
 
     h_pool2 = max_pool(h_conv2, kernel_size_2, stride_size)
 
-    # variable_summaries(W_conv2)
-    # variable_summaries(b_conv2)
-    # tf.summary.histogram('h_pool2', h_pool2)
-    # tf.summary.histogram('h_pool2/sparsity', tf.nn.zero_fraction(h_pool2))
-
-    print("hidden layer 2 shape")
-    print("W_conv2 shape =", W_conv2.get_shape())
-    print("b_conv2 shape =", b_conv2.get_shape())
-    print("h_conv2 shape =", h_conv2.get_shape())
-    print("h_pool2 shape =", h_pool2.get_shape())
-
-    # hidden layer 3
-    # cannot do it because the channel gets too small
-
-    # W_conv3 = weight_variable([1, kernel_size_3, depth_2, depth_3])
-    # b_conv3 = bias_variable([depth_3])
-
-    # h_conv3 = tf.nn.relu(depth_conv2d(h_pool2, W_conv3) + b_conv3)
-    # h_conv3 = tf.nn.dropout(h_conv3, dropout_3)
-
-    # h_pool3 = max_pool(h_conv3,kernel_size_3,stride_size)
-
-    # print "hidden layer 3 shape"
-    # print "W_conv3 shape =",W_conv3.get_shape()
-    # print "b_conv3 shape =",b_conv3.get_shape()
-    # print "h_conv3 shape =",h_conv3.get_shape()
-    # print "h_pool3 shape =",h_pool3.get_shape()
-
-    # fully connected layer
-
     # first we get the shape of the last layer and flatten it out
     shape = h_pool2.get_shape().as_list()
-    print("shape's shape:", shape)
 
     W_fc1 = weight_variable([shape[1] * shape[2] * shape[3], num_hidden])
     b_fc1 = bias_variable([num_hidden])
 
     h_pool3_flat = tf.reshape(h_pool2, [-1, shape[1] * shape[2] * shape[3]])
-    print("c_flat shape =", h_pool3_flat.shape)
     h_fc1 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc1) + b_fc1)
     h_fc1 = tf.nn.dropout(h_fc1, dropout_3)
-
-    # variable_summaries(W_fc1)
-    # variable_summaries(b_fc1)
-    # tf.summary.histogram('h_fc1', h_fc1)
-    # tf.summary.histogram('h_fc1/sparsity', tf.nn.zero_fraction(h_fc1))
 
     # readout layer.
 
@@ -419,32 +326,17 @@ def cnn_execute(dataset_name, aug_function=None):
 
     y_conv = tf.matmul(h_fc1, W_fc2) + b_fc2
 
-    # variable_summaries(W_fc2)
-    # variable_summaries(b_fc2)
-    # tf.summary.histogram('y_conv', y_conv)
-    # tf.summary.histogram('y_conv/sparsity', tf.nn.zero_fraction(y_conv))
-
-    # cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=y_conv))
-    # train_step = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
-
     # COST FUNCTION
     loss = tf.reduce_mean(
         tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=y_conv)
-    )  # -tf.reduce_sum(Y * tf.log(y_conv))
-    # optimizer = tf.train.GradientDescentOptimizer(learning_rate = learning_rate).minimize(loss)
+    )
 
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
     correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(Y, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-    # variable_summaries(loss,'loss')
-    # variable_summaries(loss)
-    # global_step = tf.Variable(0, dtype=tf.int32, trainable=False)
-
     # TRAINING THE MODEL
-    loss_over_time = np.zeros(training_epochs)
-
     config = tf.ConfigProto(
         device_count={'GPU': 0}
     )
@@ -456,8 +348,6 @@ def cnn_execute(dataset_name, aug_function=None):
     }
     with tf.Session(config=config) as session:
 
-        # merged_summary_op = tf.summary.merge_all()
-        # summary_writer = tf.summary.FileWriter("./", session.graph)
         tf.compat.v1.initialize_all_variables().run()
 
         for epoch in range(training_epochs):
@@ -471,10 +361,6 @@ def cnn_execute(dataset_name, aug_function=None):
                 if aug_function is not None:
                     batch_x, batch_y = aug_function(batch_x, batch_y)
 
-                # print "batch_x shape =",batch_x.shape
-                # print "batch_y shape =",batch_y.shape
-                # _, c, summary= session.run([optimizer, loss,merged_summary_op],feed_dict={X: batch_x, Y : batch_y, dropout_1: 1-0.1, dropout_2: 1-0.25, dropout_3: 1-0.5})
-                # cost_history = np.append(cost_history,c)
                 _, c = session.run(
                     [optimizer, loss],
                     feed_dict={
@@ -486,7 +372,6 @@ def cnn_execute(dataset_name, aug_function=None):
                     },
                 )
                 cost_history = np.append(cost_history, c)
-                # summary_writer.add_summary(summary,global_step.eval(session=session))
             mean_train_loss = np.mean(cost_history)
             train_accuracy = session.run(
                 accuracy,
@@ -500,9 +385,6 @@ def cnn_execute(dataset_name, aug_function=None):
             loss_dict["Train_Loss"].append(str(mean_train_loss))
             loss_dict["Train_Accuracy"].append(str(train_accuracy))
             loss_dict["Test_Accuracy"].append(str(test_accuracy))
-
-            with open("C:/Dev/Smart_Data/test/test.json", "w") as file:
-                json.dump(loss_dict, file)
 
             print(
                 "Epoch: ",
@@ -522,14 +404,7 @@ def cnn_execute(dataset_name, aug_function=None):
         )
         print("validation accuracy:", val_accuracy)
         y_true = np.argmax(test_y, 1)
-        # print "Precision,micro", metrics.precision_score(y_true, y_pred,average="micro")
-        # print "Precision,macro", metrics.precision_score(y_true, y_pred,average="macro")
-        # print "Precision,weighted", metrics.precision_score(y_true, y_pred,average="weighted")
-        # #print "Precision,samples", metrics.precision_score(y_true, y_pred,average="samples")
-        # print "Recall_micro", metrics.recall_score(y_true, y_pred, average="micro")
-        # print "Recall_macro", metrics.recall_score(y_true, y_pred, average="macro")
-        # print "Recall_weighted", metrics.recall_score(y_true, y_pred, average="weighted")
-        # print "Recall_samples", metrics.recall_score(y_true, y_pred, average="samples")
+
         score_dict = {"f1_score_w": [], "f1_score_m": [], "f1_score_mean": []}
         if dataset == "opp" or dataset == "pa2":
             score_dict["f1_score_w"].append(metrics.f1_score(y_true, y_pred, average="weighted"))
@@ -552,22 +427,10 @@ def cnn_execute(dataset_name, aug_function=None):
             print("f1_score_m", score_dict["f1_score_m"][-1])
         else:
             print("wrong dataset")
-        # print "f1_score_micro", metrics.f1_score(y_true, y_pred, average="micro")
-        # print "f1_score_macro", metrics.f1_score(y_true, y_pred, average="macro")
-        # print "f1_score_weighted", metrics.f1_score(y_true, y_pred, average="weighted")
-        # if dataset=="dap":
-        #     print "f1_score_", metrics.f1_score(y_true, y_pred)
-        # print "f1_score_samples", metrics.f1_score(y_true, y_pred, average="samples")
+
         print("confusion_matrix")
         confusion_matrix = metrics.confusion_matrix(y_true, y_pred)
         print(confusion_matrix)
-        # fpr, tpr, tresholds = metrics.roc_curve(y_true, y_pred)
-        # plt.figure(1)
-        # plt.plot(loss_over_time)
-        # plt.title("Loss value over epochs (CNN DG)")
-        # plt.xlabel("Epoch")
-        # plt.ylabel("Loss")
-        # plt.show()
 
 
         #######################################################################################
@@ -593,6 +456,12 @@ def cnn_execute(dataset_name, aug_function=None):
 
     return loss_dict, score_dict, confusion_matrix
 
+def main(parser: argparse.ArgumentParser):
+    parser.add_argument("--dataset", choices=["opp", "dap", "pa2"], default="opp")
+    parser.add_argument("--data_path", type=str, default=os.path.join(os.path.expanduser("~"), "datasets", "har_dataset"))
+    args = parser.parse_args()
+
+    cnn_execute(args.dataset, args.data_path, None)
 
 if __name__ == "__main__":
-    cnn_execute("opp")
+    main(argparse.ArgumentParser())
