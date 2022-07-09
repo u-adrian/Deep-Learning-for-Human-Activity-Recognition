@@ -2,20 +2,20 @@ import json
 import os.path
 
 import numpy as np
-import tsaug
 
 from ModelCreation.CNN.cnn1d import cnn_execute
-from ModelCreation.CNN.sup_augmentations import aug_noise
+from ModelCreation.CNN.sup_augmentations import aug_noise, aug_convolve, aug_crop, aug_drift, aug_dropout, aug_pool, \
+    aug_quantize
 
 
 def hyper_param_eval(aug_func, name, path):
     output_path_experiment = os.path.join(path, name)
-    output_path_experiment = "C:/Dev/Smart_Data/E3_Exp_Noise/" # TODO delete
     prob_list = [0.2, 0.5, 0.8]
 
     for i, prob in enumerate(prob_list):
         def aug_function(b_x, b_y):
             return aug_func(b_x, b_y, prob)
+
         loss_dict, score_dict, confusion_matrix = cnn_execute("opp", aug_function=aug_function)
         output_path_prob = os.path.join(output_path_experiment, f"test_{i:02d}")
 
@@ -34,6 +34,23 @@ def hyper_param_eval(aug_func, name, path):
         with open(output_path_matrix, "wb") as file:
             np.save(file, confusion_matrix)
 
+def main(path):
+    augmentation_dict = {
+        "noise": aug_noise,
+        "convolve": aug_convolve,
+        "crop": aug_crop,
+        "drift": aug_drift,
+        "dropout": aug_dropout,
+        "pool": aug_pool,
+        "quantize": aug_quantize
+    }
+
+    for augmentation_name in augmentation_dict:
+        print(f"Starting hyperparameter search for '{augmentation_name}'")
+        augmentation_func = augmentation_dict[augmentation_name]
+        hyper_param_eval(aug_func=augmentation_func, name=augmentation_name, path=path)
+
 
 if __name__ == "__main__":
-    hyper_param_eval()
+    main(path="C:/Dev/Smart_Data/E3")
+    #hyper_param_eval(aug_func=aug_noise, name="Exp_Noise", path="C:/Dev/Smart_Data/E3")
