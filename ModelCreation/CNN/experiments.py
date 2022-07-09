@@ -18,7 +18,7 @@ def hyper_param_eval(aug_func, name, output_path, data_path, dataset_name):
             return aug_func(b_x, b_y, prob)
 
         loss_dict, score_dict, confusion_matrix = cnn_execute(dataset_name, data_path=data_path, aug_function=aug_function)
-        output_path_prob = os.path.join(output_path_experiment, f"test_{i:02d}")
+        output_path_prob = os.path.join(output_path_experiment, f"test_{int(prob*100):02d}")
 
         os.makedirs(output_path_prob, exist_ok=True)
 
