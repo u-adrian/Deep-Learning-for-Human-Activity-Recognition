@@ -1,0 +1,39 @@
+import json
+import os.path
+
+import numpy as np
+import tsaug
+
+from ModelCreation.CNN.cnn1d import cnn_execute
+from ModelCreation.CNN.sup_augmentations import aug_noise
+
+
+def hyper_param_eval(aug_func, name, path):
+    output_path_experiment = os.path.join(path, name)
+    output_path_experiment = "C:/Dev/Smart_Data/E3_Exp_Noise/" # TODO delete
+    prob_list = [0.2, 0.5, 0.8]
+
+    for i, prob in enumerate(prob_list):
+        def aug_function(b_x, b_y):
+            return aug_func(b_x, b_y, prob)
+        loss_dict, score_dict, confusion_matrix = cnn_execute("opp", aug_function=aug_function)
+        output_path_prob = os.path.join(output_path_experiment, f"test_{i:02d}")
+
+        os.makedirs(output_path_prob, exist_ok=True)
+
+        output_path_loss = os.path.join(output_path_prob, "losses.json")
+        output_path_score = os.path.join(output_path_prob, "scores.json")
+        output_path_matrix = os.path.join(output_path_prob, "confusion_matrix.json")
+
+        with open(output_path_loss, "w") as file:
+            json.dump(loss_dict, file)
+
+        with open(output_path_score, "w") as file:
+            json.dump(score_dict, file)
+
+        with open(output_path_matrix, "wb") as file:
+            np.save(file, confusion_matrix)
+
+
+if __name__ == "__main__":
+    hyper_param_eval()
