@@ -14,8 +14,10 @@ def hyper_param_eval(aug_func, name, output_path, data_path, dataset_name):
     prob_list = [0.2, 0.5, 0.8]
 
     for i, prob in enumerate(prob_list):
-        def aug_function(b_x, b_y):
-            return aug_func(b_x, b_y, prob)
+        aug_function = None
+        if aug_func is not None:
+            def aug_function(b_x, b_y):
+                return aug_func(b_x, b_y, prob)
 
         loss_dict, score_dict, confusion_matrix = cnn_execute(dataset_name, data_path=data_path, aug_function=aug_function)
         output_path_prob = os.path.join(output_path_experiment, f"test_{int(prob*100):02d}")
@@ -49,6 +51,7 @@ def main(parser: argparse.ArgumentParser):
     dataset_name = args.dataset
 
     augmentation_dict = {
+        "baseline": None,
         "noise": aug_noise,
         "convolve": aug_convolve,
         "crop": aug_crop,
