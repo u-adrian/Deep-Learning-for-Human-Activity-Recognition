@@ -1,13 +1,11 @@
 import argparse
 import json
 import os.path
-import sys
 
 import numpy as np
-sys.path.append(__file__ + "/../../")
 
-from ModelCreation.CNN.cnn1d import cnn_execute
-from ModelCreation.CNN.sup_augmentations import aug_noise, aug_convolve, aug_crop, aug_drift, aug_dropout, aug_pool, \
+from cnn1d import cnn_execute
+from sup_augmentations import aug_noise, aug_convolve, aug_crop, aug_drift, aug_dropout, aug_pool, \
     aug_quantize
 
 
