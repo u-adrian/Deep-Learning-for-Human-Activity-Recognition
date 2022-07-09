@@ -1,6 +1,7 @@
 import argparse
 import json
 import os.path
+import sys
 
 import numpy as np
 
@@ -66,4 +67,5 @@ def main(parser: argparse.ArgumentParser):
 
 
 if __name__ == "__main__":
+    sys.path.append(__file__ + "/../../")
     main(argparse.ArgumentParser())
