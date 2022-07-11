@@ -338,16 +338,16 @@ def cnn_execute(dataset, data_path, aug_function=None):
         device_count={'GPU': 0}
     )
 
+    loss_dicts = []
+    score_dicts = []
+    confusion_matrices = []
+
     n_splits=5
 
     kfold = KFold(n_splits=n_splits, shuffle=True)
     with tf.Session(config=config) as session:
 
         tf.compat.v1.initialize_all_variables().run()
-
-        loss_dicts = []
-        score_dicts = []
-        confusion_matrices = []
 
         for k, (train_index, test_index) in enumerate(kfold.split(data_x)):
             print(f"Kfold: start Split {k} of {n_splits} Splits")
@@ -477,12 +477,12 @@ def cnn_execute(dataset, data_path, aug_function=None):
             #                                                                                     #
             #######################################################################################
 
-        print("--- %s seconds ---" % (time.time() - start_time))
-        print("done.")
+            print("--- %s seconds ---" % (time.time() - start_time))
+            print("done.")
 
-        loss_dicts.append(loss_dict)
-        score_dicts.append(score_dict)
-        confusion_matrices.append(confusion_matrix)
+            loss_dicts.append(loss_dict)
+            score_dicts.append(score_dict)
+            confusion_matrices.append(confusion_matrix)
 
     return loss_dicts, score_dicts, confusion_matrices
 
