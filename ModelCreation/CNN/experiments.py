@@ -8,8 +8,11 @@ from cnn1d import cnn_execute
 from sup_augmentations import aug_noise, aug_convolve, aug_crop, aug_drift, aug_dropout, aug_pool, \
     aug_quantize
 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
-def hyper_param_eval(aug_func, name, output_path, data_path, dataset_name):
+
+def hyper_param_eval(aug_func, name, output_path, data_path, dataset_name, seed):
     output_path_experiment = os.path.join(output_path, name)
     prob_list = [0.2, 0.5, 0.8]
 
@@ -18,6 +21,9 @@ def hyper_param_eval(aug_func, name, output_path, data_path, dataset_name):
         if aug_func is not None:
             def aug_function(b_x, b_y):
                 return aug_func(b_x, b_y, prob)
+
+        np.random.seed(seed)
+        tf.set_random_seed(seed)
 
         loss_dict, score_dict, confusion_matrix = cnn_execute(dataset_name, data_path=data_path, aug_function=aug_function)
         output_path_prob = os.path.join(output_path_experiment, f"test_{int(prob*100):02d}")
@@ -39,6 +45,8 @@ def hyper_param_eval(aug_func, name, output_path, data_path, dataset_name):
 
 
 def main(parser: argparse.ArgumentParser):
+    seed = 1
+
     parser.add_argument("--dataset", choices=["opp", "dap", "pa2"], default="opp")
     parser.add_argument("--data_path", type=str,
                         default=os.path.join(os.path.expanduser("~"), "datasets", "har_dataset"))
@@ -65,7 +73,7 @@ def main(parser: argparse.ArgumentParser):
         print(f"Starting hyperparameter search for '{augmentation_name}'")
         augmentation_func = augmentation_dict[augmentation_name]
         hyper_param_eval(aug_func=augmentation_func, name=augmentation_name, output_path=output_path,
-                         data_path=data_path, dataset_name=dataset_name)
+                         data_path=data_path, dataset_name=dataset_name, seed=seed)
 
 
 if __name__ == "__main__":

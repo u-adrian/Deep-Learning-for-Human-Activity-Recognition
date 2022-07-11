@@ -115,16 +115,7 @@ def max_pool(x, kernel_size, stride_size):
         x, ksize=[1, 1, kernel_size, 1], strides=[1, 1, stride_size, 1], padding="VALID"
     )
 
-
-def cnn_execute(dataset_name, data_path, aug_function=None):
-    # MAIN ()
-
-    print("starting...")
-    start_time = time.time()
-
-    # DATA PREPROCESSING
-
-    dataset = dataset_name
+def get_data(dataset, data_path, num_channels):
     if dataset == "opp":
         path = os.path.join(data_path, "OpportunityUCIDataset", "opportunity.h5")
     elif dataset == "dap":
@@ -226,34 +217,18 @@ def cnn_execute(dataset_name, data_path, aug_function=None):
     print("train_y shape(1-hot) =", train_y.shape)
     print("test_y shape(1-hot) =", test_y.shape)
 
-    # DEFINING THE MODEL
-    if dataset == "opp":
-        print("opp")
-        input_height = 1
-        input_width = input_width  # or 90 for actitracker
-        num_labels = 18  # or 6 for actitracker
-        num_channels = 77  # or 3 for actitracker
-    elif dataset == "dap":
-        print("dap")
-        input_height = 1
-        input_width = input_width  # or 90 for actitracker
-        num_labels = 2  # or 6 for actitracker
-        num_channels = 9  # or 3 for actitracker
-    elif dataset == "pa2":
-        print("pa2")
-        input_height = 1
-        input_width = input_width  # or 90 for actitracker
-        num_labels = 11  # or 6 for actitracker
-        num_channels = 52  # or 3 for actitracker
-    elif dataset == "sph":
-        print("sph")
-        input_height = 1
-        input_width = input_width  # or 90 for actitracker
-        num_labels = 20  # or 6 for actitracker
-        num_channels = 52  # or 3 for actitracker
-    else:
-        print("wrong dataset")
-    batch_size = 64
+    train_x = train_x.reshape(len(train_x), 1, input_width, num_channels)  # opportunity
+    test_x = test_x.reshape(len(test_x), 1, input_width, num_channels)  # opportunity
+    print("train_x_reshaped = ", train_x.shape)
+    print("test_x_reshaped = ", test_x.shape)
+    print("train_x shape =", train_x.shape)
+    print("train_y shape =", train_y.shape)
+    print("test_x shape =", test_x.shape)
+    print("test_y shape =", test_y.shape)
+
+    return train_x, train_y, test_x, test_y
+
+def get_model(X, num_channels, num_labels):
     stride_size = 2
     kernel_size_1 = 7
     kernel_size_2 = 3
@@ -267,26 +242,6 @@ def cnn_execute(dataset_name, data_path, aug_function=None):
     dropout_2 = tf.placeholder(tf.float32)  # 0.25
     dropout_3 = tf.placeholder(tf.float32)  # 0.5
 
-    learning_rate = 0.0005
-    training_epochs = 50
-
-    total_batches = train_x.shape[0] // batch_size
-
-    train_x = train_x.reshape(len(train_x), 1, input_width, num_channels)  # opportunity
-    test_x = test_x.reshape(len(test_x), 1, input_width, num_channels)  # opportunity
-    print("train_x_reshaped = ", train_x.shape)
-    print("test_x_reshaped = ", test_x.shape)
-    print("train_x shape =", train_x.shape)
-    print("train_y shape =", train_y.shape)
-    print("test_x shape =", test_x.shape)
-    print("test_y shape =", test_y.shape)
-
-    X = tf.placeholder(tf.float32, shape=[None, input_height, input_width, num_channels])
-    Y = tf.placeholder(tf.float32, shape=[None, num_labels])
-
-    print("X shape =", X.shape)
-    print("Y shape =", Y.shape)
-
     # HIDDEN LAYERS AND FULLY CONNECTED FOR Opportunity etc
     # https://www.tensorflow.org/get_started/mnist/pros
 
@@ -295,7 +250,6 @@ def cnn_execute(dataset_name, data_path, aug_function=None):
     b_conv1 = bias_variable([depth_1])
 
     h_conv1 = tf.nn.relu(depth_conv2d(X, W_conv1) + b_conv1)
-    # h_conv1 = tf.nn.dropout(tf.identity(h_conv1), dropout_1)
     h_conv1 = tf.nn.dropout(h_conv1, dropout_1)
 
     h_pool1 = max_pool(h_conv1, kernel_size_1, stride_size)
@@ -325,6 +279,60 @@ def cnn_execute(dataset_name, data_path, aug_function=None):
     b_fc2 = bias_variable([num_labels])
 
     y_conv = tf.matmul(h_fc1, W_fc2) + b_fc2
+
+    return y_conv, dropout_1, dropout_2, dropout_3
+
+def cnn_execute(dataset, data_path, aug_function=None):
+    # MAIN ()
+
+    print("starting...")
+    start_time = time.time()
+
+    # DATA PREPROCESSING
+
+    if dataset == "opp":
+        print("opp")
+        input_height = 1
+        input_width = 23  # or 90 for actitracker
+        num_labels = 18  # or 6 for actitracker
+        num_channels = 77  # or 3 for actitracker
+    elif dataset == "dap":
+        print("dap")
+        input_height = 1
+        input_width = 25  # or 90 for actitracker
+        num_labels = 2  # or 6 for actitracker
+        num_channels = 9  # or 3 for actitracker
+    elif dataset == "pa2":
+        print("pa2")
+        input_height = 1
+        input_width = 25  # or 90 for actitracker
+        num_labels = 11  # or 6 for actitracker
+        num_channels = 52  # or 3 for actitracker
+    elif dataset == "sph":
+        print("sph")
+        input_height = 1
+        input_width = 25  # or 90 for actitracker
+        num_labels = 20  # or 6 for actitracker
+        num_channels = 52  # or 3 for actitracker
+    else:
+        print("wrong dataset")
+        sys.exit()
+
+    train_x, train_y, test_x, test_y = get_data(dataset, data_path, num_channels)
+
+    X = tf.placeholder(tf.float32, shape=[None, input_height, input_width, num_channels])
+    Y = tf.placeholder(tf.float32, shape=[None, num_labels])
+
+    print("X shape =", X.shape)
+    print("Y shape =", Y.shape)
+
+    y_conv, dropout_1, dropout_2, dropout_3 = get_model(X, num_channels, num_labels)
+
+    batch_size = 64
+    total_batches = train_x.shape[0] // batch_size
+
+    learning_rate = 0.0005
+    training_epochs = 50
 
     # COST FUNCTION
     loss = tf.reduce_mean(

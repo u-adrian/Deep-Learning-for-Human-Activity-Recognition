@@ -13,7 +13,7 @@ def scaling(x, sigma=0.1):
 def rotation(x):
     flip = np.random.choice([-1, 1], size=(x.shape[0],x.shape[2]))
     rotate_axis = np.arange(x.shape[2])
-    np.random.shuffle(rotate_axis)    
+    np.random.shuffle(rotate_axis)
     return flip[:,np.newaxis,:] * x[:,:,rotate_axis]
 
 def permutation(x, max_segments=5, seg_mode="equal"):
