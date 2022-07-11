@@ -359,7 +359,7 @@ def cnn_execute(dataset, data_path, aug_function=None):
         score_dicts = []
         confusion_matrices = []
 
-        for k, train_index, test_index in enumerate(kfold.split(data_x)):
+        for k, (train_index, test_index) in enumerate(kfold.split(data_x)):
             train_x, test_x = data_x[train_index], data_x[test_index]
             train_y, test_y = data_y[train_index], data_y[test_index]
 
