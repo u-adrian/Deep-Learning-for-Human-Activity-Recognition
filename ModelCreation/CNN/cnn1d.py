@@ -464,6 +464,264 @@ def cnn_execute(dataset, data_path, aug_function=None):
 
     return loss_dict, score_dict, confusion_matrix
 
+
+def label_counting(dataset_name, data_path):
+    # MAIN ()
+
+    print("starting...")
+    start_time = time.time()
+
+    # DATA PREPROCESSING
+
+    dataset = dataset_name
+    if dataset == "opp":
+        path = os.path.join(data_path, "OpportunityUCIDataset", "opportunity.h5")
+    elif dataset == "dap":
+        path = os.path.join(data_path, "dataset_fog_release", "daphnet.h5")
+    elif dataset == "pa2":
+        path = os.path.join(data_path, "PAMAP2_Dataset", "pamap2.h5")
+    elif dataset == "sph":
+        path = os.path.join(data_path, "SphereDataset", "sphere.h5")
+    else:
+        print("Dataset not supported yet")
+        sys.exit()
+
+    f = h5py.File(path, "r")
+
+    x_train = f.get("train").get("inputs")[()]
+    y_train = f.get("train").get("targets")[()]
+
+    x_test = f.get("test").get("inputs")[()]
+    y_test = f.get("test").get("targets")[()]
+
+    print("x_train shape = ", x_train.shape)
+    print("y_train shape =", y_train.shape)
+    print("x_test shape =", x_test.shape)
+    print("y_test shape =", y_test.shape)
+
+    if dataset == "dap":
+        # downsample to 30 Hz
+        x_train = x_train[::2, :]
+        y_train = y_train[::2]
+        x_test = x_test[::2, :]
+        y_test = y_test[::2]
+        print("x_train shape(downsampled) = ", x_train.shape)
+        print("y_train shape(downsampled) =", y_train.shape)
+        print("x_test shape(downsampled) =", x_test.shape)
+        print("y_test shape(downsampled) =", y_test.shape)
+
+    if dataset == "pa2":
+        # downsample to 30 Hz
+        x_train = x_train[::3, :]
+        y_train = y_train[::3]
+        x_test = x_test[::3, :]
+        y_test = y_test[::3]
+        print("x_train shape(downsampled) = ", x_train.shape)
+        print("y_train shape(downsampled) =", y_train.shape)
+        print("x_test shape(downsampled) =", x_test.shape)
+        print("y_test shape(downsampled) =", y_test.shape)
+
+    print(np.unique(y_train))
+    print(np.unique(y_test))
+
+    input_width = 23
+    if dataset == "opp":
+        input_width = 23
+        print("segmenting signal...")
+        train_x, train_y = segment_opp(x_train, y_train, input_width)
+        test_x, test_y = segment_opp(x_test, y_test, input_width)
+        print("signal segmented.")
+    elif dataset == "dap":
+        print("dap seg")
+        input_width = 25
+        print("segmenting signal...")
+        train_x, train_y = segment_dap(x_train, y_train, input_width)
+        test_x, test_y = segment_dap(x_test, y_test, input_width)
+        print("signal segmented.")
+    elif dataset == "pa2":
+        input_width = 25
+        print("segmenting signal...")
+        train_x, train_y = segment_pa2(x_train, y_train, input_width)
+        test_x, test_y = segment_pa2(x_test, y_test, input_width)
+        print("signal segmented.")
+    elif dataset == "sph":
+        input_width = 25
+        print("segmenting signal...")
+        train_x, train_y = segment_sph(x_train, y_train, input_width)
+        test_x, test_y = segment_sph(x_test, y_test, input_width)
+        print("signal segmented.")
+    else:
+        print("no correct dataset")
+
+    print("train_x shape =", train_x.shape)
+    print("train_y shape =", train_y.shape)
+    print("test_x shape =", test_x.shape)
+    print("test_y shape =", test_y.shape)
+
+    # http://fastml.com/how-to-use-pd-dot-get-dummies-with-the-test-set/
+
+    train = pd.get_dummies(train_y)
+    test = pd.get_dummies(test_y)
+
+    train, test = train.align(test, join="inner", axis=1)  # maybe 'outer' is better
+
+    train_y = np.asarray(train)
+    test_y = np.asarray(test)
+
+    print("unique test_y", np.unique(test_y))
+    print("unique train_y", np.unique(train_y))
+    print("test_y[1]=", test_y[1])
+    # test_y = np.asarray(pd.get_dummies(test_y), dtype = np.int8)
+    print("train_y shape(1-hot) =", train_y.shape)
+    print("test_y shape(1-hot) =", test_y.shape)
+
+    # DEFINING THE MODEL
+    if dataset == "opp":
+        print("opp")
+        input_height = 1
+        input_width = input_width  # or 90 for actitracker
+        num_labels = 18  # or 6 for actitracker
+        num_channels = 77  # or 3 for actitracker
+    elif dataset == "dap":
+        print("dap")
+        input_height = 1
+        input_width = input_width  # or 90 for actitracker
+        num_labels = 2  # or 6 for actitracker
+        num_channels = 9  # or 3 for actitracker
+    elif dataset == "pa2":
+        print("pa2")
+        input_height = 1
+        input_width = input_width  # or 90 for actitracker
+        num_labels = 11  # or 6 for actitracker
+        num_channels = 52  # or 3 for actitracker
+    elif dataset == "sph":
+        print("sph")
+        input_height = 1
+        input_width = input_width  # or 90 for actitracker
+        num_labels = 20  # or 6 for actitracker
+        num_channels = 52  # or 3 for actitracker
+    else:
+        print("wrong dataset")
+    batch_size = 64
+    stride_size = 2
+    kernel_size_1 = 7
+    kernel_size_2 = 3
+    kernel_size_3 = 1
+    depth_1 = 128
+    depth_2 = 128
+    depth_3 = 128
+    num_hidden = 512  # neurons in the fully connected layer
+
+    dropout_1 = tf.placeholder(tf.float32)  # 0.1
+    dropout_2 = tf.placeholder(tf.float32)  # 0.25
+    dropout_3 = tf.placeholder(tf.float32)  # 0.5
+
+    learning_rate = 0.0005
+    training_epochs = 50
+
+    total_batches = train_x.shape[0] // batch_size
+
+    train_x = train_x.reshape(len(train_x), 1, input_width, num_channels)  # opportunity
+    test_x = test_x.reshape(len(test_x), 1, input_width, num_channels)  # opportunity
+    print("train_x_reshaped = ", train_x.shape)
+    print("test_x_reshaped = ", test_x.shape)
+    print("train_x shape =", train_x.shape)
+    print("train_y shape =", train_y.shape)
+    print("test_x shape =", test_x.shape)
+    print("test_y shape =", test_y.shape)
+
+    X = tf.placeholder(tf.float32, shape=[None, input_height, input_width, num_channels])
+    Y = tf.placeholder(tf.float32, shape=[None, num_labels])
+
+    print("X shape =", X.shape)
+    print("Y shape =", Y.shape)
+
+    # HIDDEN LAYERS AND FULLY CONNECTED FOR Opportunity etc
+    # https://www.tensorflow.org/get_started/mnist/pros
+
+    # hidden layer 1
+    W_conv1 = weight_variable([1, kernel_size_1, num_channels, depth_1])
+    b_conv1 = bias_variable([depth_1])
+
+    h_conv1 = tf.nn.relu(depth_conv2d(X, W_conv1) + b_conv1)
+    # h_conv1 = tf.nn.dropout(tf.identity(h_conv1), dropout_1)
+    h_conv1 = tf.nn.dropout(h_conv1, dropout_1)
+
+    h_pool1 = max_pool(h_conv1, kernel_size_1, stride_size)
+
+    # hidden layer 2
+    W_conv2 = weight_variable([1, kernel_size_2, depth_1, depth_2])
+    b_conv2 = bias_variable([depth_2])
+
+    h_conv2 = tf.nn.relu(depth_conv2d(h_pool1, W_conv2) + b_conv2)
+    h_conv2 = tf.nn.dropout(h_conv2, dropout_2)
+
+    h_pool2 = max_pool(h_conv2, kernel_size_2, stride_size)
+
+    # first we get the shape of the last layer and flatten it out
+    shape = h_pool2.get_shape().as_list()
+
+    W_fc1 = weight_variable([shape[1] * shape[2] * shape[3], num_hidden])
+    b_fc1 = bias_variable([num_hidden])
+
+    h_pool3_flat = tf.reshape(h_pool2, [-1, shape[1] * shape[2] * shape[3]])
+    h_fc1 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc1) + b_fc1)
+    h_fc1 = tf.nn.dropout(h_fc1, dropout_3)
+
+    # readout layer.
+
+    W_fc2 = weight_variable([num_hidden, num_labels])
+    b_fc2 = bias_variable([num_labels])
+
+    y_conv = tf.matmul(h_fc1, W_fc2) + b_fc2
+
+    # COST FUNCTION
+    loss = tf.reduce_mean(
+        tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=y_conv)
+    )
+
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+
+    correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(Y, 1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+    # TRAINING THE MODEL
+    config = tf.ConfigProto(
+        device_count={'GPU': 0}
+    )
+
+    loss_dict = {
+        "Train_Accuracy": [],
+        "Train_Loss": [],
+        "Test_Accuracy": [],
+    }
+    label_counting_dict = {}
+    with tf.Session(config=config) as session:
+
+        tf.compat.v1.initialize_all_variables().run()
+
+        for epoch in range(1):
+            print("ONLY ONCE")
+            cost_history = np.empty(shape=[0], dtype=float)
+            for b in range(total_batches):
+                offset = (b * batch_size) % (train_y.shape[0] - batch_size)
+                batch_x = train_x[offset: (offset + batch_size), :, :, :]
+                batch_y = train_y[offset: (offset + batch_size), :]
+
+                for label in batch_y:
+                    if not np.asarray(label).sum() == 1:
+                        label_str = "None"
+                    else:
+                        label_str = f"{np.where(label==1)[0][0]:03d}"
+
+                    if label_str not in label_counting_dict:
+                        label_counting_dict[label_str] = 0
+                    label_counting_dict[label_str] = label_counting_dict[label_str] + 1
+
+                #print(label_counting_dict)
+
+    return label_counting_dict
+
 def main(parser: argparse.ArgumentParser):
     parser.add_argument("--dataset", choices=["opp", "dap", "pa2"], default="opp")
     parser.add_argument("--data_path", type=str, default=os.path.join(os.path.expanduser("~"), "datasets", "har_dataset"))
