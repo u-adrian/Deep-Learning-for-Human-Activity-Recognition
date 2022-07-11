@@ -320,7 +320,7 @@ def cnn_execute(dataset, data_path, aug_function=None):
 
     train_x, train_y, test_x, test_y = get_data(dataset, data_path, num_channels)
 
-    data_x, data_y = train_x.append(test_x), train_y.append(test_y)
+    data_x, data_y = np.concatenate([train_x, test_x]), np.concatenate([train_y, test_y])
 
     X = tf.placeholder(tf.float32, shape=[None, input_height, input_width, num_channels])
     Y = tf.placeholder(tf.float32, shape=[None, num_labels])
@@ -440,6 +440,7 @@ def cnn_execute(dataset, data_path, aug_function=None):
                 print("f1_score_m", score_dict["f1_score_m"][-1])
             elif dataset == "sph":
                 score_dict["f1_score_mean"].append(metrics.f1_score(y_true, y_pred, average="micro"))
+                score_dict["f1_score_w"].append(metrics.f1_score(y_true, y_pred, average="weighted"))
                 score_dict["f1_score_w"].append(metrics.f1_score(y_true, y_pred, average="weighted"))
                 score_dict["f1_score_m"].append(metrics.f1_score(y_true, y_pred, average="macro"))
 
