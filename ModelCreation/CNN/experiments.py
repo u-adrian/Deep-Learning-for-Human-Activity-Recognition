@@ -30,7 +30,7 @@ def hyper_param_eval(aug_func, name, output_path, data_path, dataset_name, seed)
 
         os.makedirs(output_path_prob, exist_ok=True)
 
-        for i, loss_dict, score_dict, confusion_matrix in enumerate(zip(loss_dicts, score_dicts, confusion_matrices)):
+        for i, (loss_dict, score_dict, confusion_matrix) in enumerate(zip(loss_dicts, score_dicts, confusion_matrices)):
             output_path_cv = os.path.join(output_path_prob, f"cv_{i:02d}")
 
             os.makedirs(output_path_cv, exist_ok=True)

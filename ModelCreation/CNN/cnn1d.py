@@ -328,29 +328,19 @@ def cnn_execute(dataset, data_path, aug_function=None):
     print("X shape =", X.shape)
     print("Y shape =", Y.shape)
 
-    y_conv, dropout_1, dropout_2, dropout_3 = get_model(X, num_channels, num_labels)
-
     batch_size = 64
 
     learning_rate = 0.0005
     training_epochs = 50
-
-    # COST FUNCTION
-    loss = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=y_conv)
-    )
-
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
-
-    correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(Y, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     # TRAINING THE MODEL
     config = tf.ConfigProto(
         device_count={'GPU': 0}
     )
 
-    kfold = KFold(n_splits=5, shuffle=True)
+    n_splits=5
+
+    kfold = KFold(n_splits=n_splits, shuffle=True)
     with tf.Session(config=config) as session:
 
         tf.compat.v1.initialize_all_variables().run()
@@ -360,8 +350,22 @@ def cnn_execute(dataset, data_path, aug_function=None):
         confusion_matrices = []
 
         for k, (train_index, test_index) in enumerate(kfold.split(data_x)):
+            print(f"Kfold: start Split {k} of {n_splits} Splits")
+
             train_x, test_x = data_x[train_index], data_x[test_index]
             train_y, test_y = data_y[train_index], data_y[test_index]
+
+            y_conv, dropout_1, dropout_2, dropout_3 = get_model(X, num_channels, num_labels)
+
+            # COST FUNCTION
+            loss = tf.reduce_mean(
+                tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=y_conv)
+            )
+
+            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+
+            correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(Y, 1))
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
             loss_dict = {
                 "Train_Accuracy": [],
