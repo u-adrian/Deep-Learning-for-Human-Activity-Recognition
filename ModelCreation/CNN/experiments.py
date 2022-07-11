@@ -37,7 +37,7 @@ def hyper_param_eval(aug_func, name, output_path, data_path, dataset_name, seed)
 
             output_path_loss = os.path.join(output_path_cv, "losses.json")
             output_path_score = os.path.join(output_path_cv, "scores.json")
-            output_path_matrix = os.path.join(output_path_cv, "confusion_matrix.json")
+            output_path_matrix = os.path.join(output_path_cv, "confusion_matrix.npy")
 
             with open(output_path_loss, "w") as file:
                 json.dump(loss_dict, file)

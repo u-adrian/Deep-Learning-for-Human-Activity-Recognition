@@ -21,23 +21,35 @@ def analyze(path, range, f1_score):
 
         for prob_folder in prob_folders:
             if prob_folder not in dictionary.keys():
-                dictionary[prob_folder] = []
+                dictionary[prob_folder] = {"mean":[], "std":[]}
 
-            score_path = os.path.join(folder_path, prob_folder, "scores.json")
-            with open(score_path, "r") as file:
-                scores_dict = json.load(file)
-                dictionary[prob_folder].append(scores_dict[f1_score][0])
+            prob_folder_path = os.path.join(folder_path, prob_folder)
+
+            cv_folders = os.listdir(prob_folder_path)
+            cv_scores = np.zeros(len(cv_folders))
+
+            for i, cv_folder in enumerate(cv_folders):
+                cv_folder_path = os.path.join(prob_folder_path, cv_folder)
+
+
+                score_path = os.path.join(cv_folder_path, "scores.json")
+                with open(score_path, "r") as file:
+                    scores_dict = json.load(file)
+                    cv_scores[i] = scores_dict[f1_score][0]
+
+            dictionary[prob_folder]["mean"].append(np.mean(cv_scores))
+            dictionary[prob_folder]["std"].append(np.std(cv_scores))
 
     plt.ylim(range[0], range[1])
     #Baseline
-    plt.bar(function_nums[0] - 0.2, dictionary["test_20"][0], width=0.2, color="grey", edgecolor="black",align="center")
-    plt.bar(function_nums[0], dictionary["test_50"][0], width=0.2, color="grey", edgecolor="black", align="center")
-    plt.bar(function_nums[0] + 0.2, dictionary["test_80"][0], width=0.2, color="grey", edgecolor="black", align="center")
+    plt.bar(function_nums[0] - 0.2, dictionary["test_20"]["mean"][0], yerr=dictionary["test_20"]["std"][0], width=0.2, color="grey", edgecolor="black",align="center")
+    plt.bar(function_nums[0], dictionary["test_50"]["mean"][0], yerr=dictionary["test_50"]["std"][0], width=0.2, color="grey", edgecolor="black", align="center")
+    plt.bar(function_nums[0] + 0.2, dictionary["test_80"]["mean"][0], yerr=dictionary["test_80"]["std"][0], width=0.2, color="grey", edgecolor="black", align="center")
 
     #augmentations
-    plt.bar(function_nums[1:] - 0.2, dictionary["test_20"][1:], width=0.2, color="b", edgecolor="black", align="center", label="0.20")
-    plt.bar(function_nums[1:], dictionary["test_50"][1:], width=0.2, color="g", edgecolor="black", align="center", label="0.50")
-    plt.bar(function_nums[1:] + 0.2, dictionary["test_80"][1:], width=0.2, color="r", edgecolor="black", align="center", label="0.80")
+    plt.bar(function_nums[1:] - 0.2, dictionary["test_20"]["mean"][1:], yerr=dictionary["test_20"]["std"][1:], width=0.2, color="b", edgecolor="black", align="center", label="0.20")
+    plt.bar(function_nums[1:], dictionary["test_50"]["mean"][1:], yerr=dictionary["test_50"]["std"][1:], width=0.2, color="g", edgecolor="black", align="center", label="0.50")
+    plt.bar(function_nums[1:] + 0.2, dictionary["test_80"]["mean"][1:], yerr=dictionary["test_80"]["std"][1:], width=0.2, color="r", edgecolor="black", align="center", label="0.80")
 
     plt.xticks(function_nums, functions, fontsize=9)
 
