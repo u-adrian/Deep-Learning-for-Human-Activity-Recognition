@@ -328,6 +328,8 @@ def cnn_execute(dataset, data_path, aug_function=None):
     print("X shape =", X.shape)
     print("Y shape =", Y.shape)
 
+    y_conv, dropout_1, dropout_2, dropout_3 = get_model(X, num_channels, num_labels)
+
     batch_size = 64
 
     learning_rate = 0.0005
@@ -347,15 +349,11 @@ def cnn_execute(dataset, data_path, aug_function=None):
     kfold = KFold(n_splits=n_splits, shuffle=True)
     with tf.Session(config=config) as session:
 
-        tf.compat.v1.initialize_all_variables().run()
-
         for k, (train_index, test_index) in enumerate(kfold.split(data_x)):
-            print(f"Kfold: start Split {k} of {n_splits} Splits")
+            print(f"Kfold: start Split {k+1} of {n_splits} Splits")
 
             train_x, test_x = data_x[train_index], data_x[test_index]
             train_y, test_y = data_y[train_index], data_y[test_index]
-
-            y_conv, dropout_1, dropout_2, dropout_3 = get_model(X, num_channels, num_labels)
 
             # COST FUNCTION
             loss = tf.reduce_mean(
@@ -372,6 +370,8 @@ def cnn_execute(dataset, data_path, aug_function=None):
                 "Train_Loss": [],
                 "Test_Accuracy": [],
             }
+
+            tf.compat.v1.initialize_all_variables().run()
 
             total_batches = train_x.shape[0] // batch_size
             for epoch in range(training_epochs):
