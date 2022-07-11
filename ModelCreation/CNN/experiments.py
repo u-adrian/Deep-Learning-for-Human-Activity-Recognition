@@ -25,23 +25,28 @@ def hyper_param_eval(aug_func, name, output_path, data_path, dataset_name, seed)
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-        loss_dict, score_dict, confusion_matrix = cnn_execute(dataset_name, data_path=data_path, aug_function=aug_function)
+        loss_dicts, score_dicts, confusion_matrices = cnn_execute(dataset_name, data_path=data_path, aug_function=aug_function)
         output_path_prob = os.path.join(output_path_experiment, f"test_{int(prob*100):02d}")
 
         os.makedirs(output_path_prob, exist_ok=True)
 
-        output_path_loss = os.path.join(output_path_prob, "losses.json")
-        output_path_score = os.path.join(output_path_prob, "scores.json")
-        output_path_matrix = os.path.join(output_path_prob, "confusion_matrix.json")
+        for i, loss_dict, score_dict, confusion_matrix in enumerate(zip(loss_dicts, score_dicts, confusion_matrices)):
+            output_path_cv = os.path.join(output_path_prob, f"cv_{i:02d}")
 
-        with open(output_path_loss, "w") as file:
-            json.dump(loss_dict, file)
+            os.makedirs(output_path_cv, exist_ok=True)
 
-        with open(output_path_score, "w") as file:
-            json.dump(score_dict, file)
+            output_path_loss = os.path.join(output_path_cv, "losses.json")
+            output_path_score = os.path.join(output_path_cv, "scores.json")
+            output_path_matrix = os.path.join(output_path_cv, "confusion_matrix.json")
 
-        with open(output_path_matrix, "wb") as file:
-            np.save(file, confusion_matrix)
+            with open(output_path_loss, "w") as file:
+                json.dump(loss_dict, file)
+
+            with open(output_path_score, "w") as file:
+                json.dump(score_dict, file)
+
+            with open(output_path_matrix, "wb") as file:
+                np.save(file, confusion_matrix)
 
 
 def main(parser: argparse.ArgumentParser):

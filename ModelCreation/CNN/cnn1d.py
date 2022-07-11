@@ -5,6 +5,7 @@ from scipy import stats
 import tensorflow.compat.v1 as tf
 import time
 from sklearn import metrics
+from sklearn.model_selection import KFold
 import h5py
 import os
 import sys
@@ -289,7 +290,6 @@ def cnn_execute(dataset, data_path, aug_function=None):
     start_time = time.time()
 
     # DATA PREPROCESSING
-
     if dataset == "opp":
         print("opp")
         input_height = 1
@@ -320,6 +320,8 @@ def cnn_execute(dataset, data_path, aug_function=None):
 
     train_x, train_y, test_x, test_y = get_data(dataset, data_path, num_channels)
 
+    data_x, data_y = train_x.append(test_x), train_y.append(test_y)
+
     X = tf.placeholder(tf.float32, shape=[None, input_height, input_width, num_channels])
     Y = tf.placeholder(tf.float32, shape=[None, num_labels])
 
@@ -329,7 +331,6 @@ def cnn_execute(dataset, data_path, aug_function=None):
     y_conv, dropout_1, dropout_2, dropout_3 = get_model(X, num_channels, num_labels)
 
     batch_size = 64
-    total_batches = train_x.shape[0] // batch_size
 
     learning_rate = 0.0005
     training_epochs = 50
@@ -349,120 +350,136 @@ def cnn_execute(dataset, data_path, aug_function=None):
         device_count={'GPU': 0}
     )
 
-    loss_dict = {
-        "Train_Accuracy": [],
-        "Train_Loss": [],
-        "Test_Accuracy": [],
-    }
+    kfold = KFold(n_splits=5, shuffle=True)
     with tf.Session(config=config) as session:
 
         tf.compat.v1.initialize_all_variables().run()
 
-        for epoch in range(training_epochs):
+        loss_dicts = []
+        score_dicts = []
+        confusion_matrices = []
 
-            cost_history = np.empty(shape=[0], dtype=float)
-            for b in range(total_batches):
-                offset = (b * batch_size) % (train_y.shape[0] - batch_size)
-                batch_x = train_x[offset: (offset + batch_size), :, :, :]
-                batch_y = train_y[offset: (offset + batch_size), :]
+        for k, train_index, test_index in enumerate(kfold.split(data_x)):
+            train_x, test_x = data_x[train_index], data_x[test_index]
+            train_y, test_y = data_y[train_index], data_y[test_index]
 
-                if aug_function is not None:
-                    batch_x, batch_y = aug_function(batch_x, batch_y)
+            loss_dict = {
+                "Train_Accuracy": [],
+                "Train_Loss": [],
+                "Test_Accuracy": [],
+            }
 
-                _, c = session.run(
-                    [optimizer, loss],
-                    feed_dict={
-                        X: batch_x,
-                        Y: batch_y,
-                        dropout_1: 1 - 0.1,
-                        dropout_2: 1 - 0.25,
-                        dropout_3: 1 - 0.5,
-                    },
+            total_batches = train_x.shape[0] // batch_size
+            for epoch in range(training_epochs):
+
+                cost_history = np.empty(shape=[0], dtype=float)
+
+                for b in range(total_batches):
+                    offset = (b * batch_size) % (train_y.shape[0] - batch_size)
+                    batch_x = train_x[offset: (offset + batch_size), :, :, :]
+                    batch_y = train_y[offset: (offset + batch_size), :]
+
+                    if aug_function is not None:
+                        batch_x, batch_y = aug_function(batch_x, batch_y)
+
+                    _, c = session.run(
+                        [optimizer, loss],
+                        feed_dict={
+                            X: batch_x,
+                            Y: batch_y,
+                            dropout_1: 1 - 0.1,
+                            dropout_2: 1 - 0.25,
+                            dropout_3: 1 - 0.5,
+                        },
+                    )
+                    cost_history = np.append(cost_history, c)
+                mean_train_loss = np.mean(cost_history)
+                train_accuracy = session.run(
+                    accuracy,
+                    feed_dict={X: train_x, Y: train_y, dropout_1: 1 - 0.1, dropout_2: 1 - 0.25, dropout_3: 1 - 0.5}
                 )
-                cost_history = np.append(cost_history, c)
-            mean_train_loss = np.mean(cost_history)
-            train_accuracy = session.run(
-                accuracy,
-                feed_dict={X: train_x, Y: train_y, dropout_1: 1 - 0.1, dropout_2: 1 - 0.25, dropout_3: 1 - 0.5}
-            )
-            test_accuracy = session.run(
-                accuracy,
+                test_accuracy = session.run(
+                    accuracy,
+                    feed_dict={X: test_x, Y: test_y, dropout_1: 1, dropout_2: 1, dropout_3: 1},
+                )
+
+                loss_dict["Train_Loss"].append(str(mean_train_loss))
+                loss_dict["Train_Accuracy"].append(str(train_accuracy))
+                loss_dict["Test_Accuracy"].append(str(test_accuracy))
+
+                print(
+                    "Epoch: ",
+                    epoch,
+                    " Training Loss: ",
+                    mean_train_loss,
+                    " Training Accuracy: ",
+                    train_accuracy,
+                    "Testing Accuracy:",
+                    test_accuracy,
+                )
+
+            y_p = tf.argmax(y_conv, 1)
+            val_accuracy, y_pred = session.run(
+                [accuracy, y_p],
                 feed_dict={X: test_x, Y: test_y, dropout_1: 1, dropout_2: 1, dropout_3: 1},
             )
+            print("validation accuracy:", val_accuracy)
+            y_true = np.argmax(test_y, 1)
 
-            loss_dict["Train_Loss"].append(str(mean_train_loss))
-            loss_dict["Train_Accuracy"].append(str(train_accuracy))
-            loss_dict["Test_Accuracy"].append(str(test_accuracy))
+            score_dict = {"f1_score_w": [], "f1_score_m": [], "f1_score_mean": []}
+            if dataset == "opp" or dataset == "pa2":
+                score_dict["f1_score_w"].append(metrics.f1_score(y_true, y_pred, average="weighted"))
+                score_dict["f1_score_m"].append(metrics.f1_score(y_true, y_pred, average="macro"))
+                # print "f1_score_mean", metrics.f1_score(y_true, y_pred, average="micro")
+                print("f1_score_w", score_dict["f1_score_w"][-1])
 
-            print(
-                "Epoch: ",
-                epoch,
-                " Training Loss: ",
-                mean_train_loss,
-                " Training Accuracy: ",
-                train_accuracy,
-                "Testing Accuracy:",
-                test_accuracy,
-            )
+                print("f1_score_m", score_dict["f1_score_m"][-1])
+                # print "f1_score_per_class", metrics.f1_score(y_true, y_pred, average=None)
+            elif dataset == "dap":
+                score_dict["f1_score_m"].append(metrics.f1_score(y_true, y_pred, average="macro"))
+                print("f1_score_m", score_dict["f1_score_m"][-1])
+            elif dataset == "sph":
+                score_dict["f1_score_mean"].append(metrics.f1_score(y_true, y_pred, average="micro"))
+                score_dict["f1_score_w"].append(metrics.f1_score(y_true, y_pred, average="weighted"))
+                score_dict["f1_score_m"].append(metrics.f1_score(y_true, y_pred, average="macro"))
 
-        y_p = tf.argmax(y_conv, 1)
-        val_accuracy, y_pred = session.run(
-            [accuracy, y_p],
-            feed_dict={X: test_x, Y: test_y, dropout_1: 1, dropout_2: 1, dropout_3: 1},
-        )
-        print("validation accuracy:", val_accuracy)
-        y_true = np.argmax(test_y, 1)
+                print("f1_score_mean", score_dict["f1_score_mean"][-1])
+                print("f1_score_w", score_dict["f1_score_w"][-1])
+                print("f1_score_m", score_dict["f1_score_m"][-1])
+            else:
+                print("wrong dataset")
 
-        score_dict = {"f1_score_w": [], "f1_score_m": [], "f1_score_mean": []}
-        if dataset == "opp" or dataset == "pa2":
-            score_dict["f1_score_w"].append(metrics.f1_score(y_true, y_pred, average="weighted"))
-            score_dict["f1_score_m"].append(metrics.f1_score(y_true, y_pred, average="macro"))
-            # print "f1_score_mean", metrics.f1_score(y_true, y_pred, average="micro")
-            print("f1_score_w", score_dict["f1_score_w"][-1])
-
-            print("f1_score_m", score_dict["f1_score_m"][-1])
-            # print "f1_score_per_class", metrics.f1_score(y_true, y_pred, average=None)
-        elif dataset == "dap":
-            score_dict["f1_score_m"].append(metrics.f1_score(y_true, y_pred, average="macro"))
-            print("f1_score_m", score_dict["f1_score_m"][-1])
-        elif dataset == "sph":
-            score_dict["f1_score_mean"].append(metrics.f1_score(y_true, y_pred, average="micro"))
-            score_dict["f1_score_w"].append(metrics.f1_score(y_true, y_pred, average="weighted"))
-            score_dict["f1_score_m"].append(metrics.f1_score(y_true, y_pred, average="macro"))
-
-            print("f1_score_mean", score_dict["f1_score_mean"][-1])
-            print("f1_score_w", score_dict["f1_score_w"][-1])
-            print("f1_score_m", score_dict["f1_score_m"][-1])
-        else:
-            print("wrong dataset")
-
-        print("confusion_matrix")
-        confusion_matrix = metrics.confusion_matrix(y_true, y_pred)
-        print(confusion_matrix)
+            print("confusion_matrix")
+            confusion_matrix = metrics.confusion_matrix(y_true, y_pred)
+            print(confusion_matrix)
 
 
-        #######################################################################################
-        #### micro- macro- weighted explanation ###############################################
-        #                                                                                     #
-        # http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html      #
-        #                                                                                     #
-        # micro :Calculate metrics globally by counting the total true positives,             #
-        # false negatives and false positives.                                                #
-        #                                                                                     #
-        # macro :Calculate metrics for each label, and find their unweighted mean.            #
-        # This does not take label imbalance into account.                                    #
-        #                                                                                     #
-        # weighted :Calculate metrics for each label, and find their average, weighted        #
-        # by support (the number of true instances for each label). This alters macro         #
-        # to account for label imbalance; it can result in an F-score that is not between     #
-        # precision and recall.                                                               #
-        #                                                                                     #
-        #######################################################################################
+            #######################################################################################
+            #### micro- macro- weighted explanation ###############################################
+            #                                                                                     #
+            # http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html      #
+            #                                                                                     #
+            # micro :Calculate metrics globally by counting the total true positives,             #
+            # false negatives and false positives.                                                #
+            #                                                                                     #
+            # macro :Calculate metrics for each label, and find their unweighted mean.            #
+            # This does not take label imbalance into account.                                    #
+            #                                                                                     #
+            # weighted :Calculate metrics for each label, and find their average, weighted        #
+            # by support (the number of true instances for each label). This alters macro         #
+            # to account for label imbalance; it can result in an F-score that is not between     #
+            # precision and recall.                                                               #
+            #                                                                                     #
+            #######################################################################################
 
-    print("--- %s seconds ---" % (time.time() - start_time))
-    print("done.")
+        print("--- %s seconds ---" % (time.time() - start_time))
+        print("done.")
 
-    return loss_dict, score_dict, confusion_matrix
+        loss_dicts.append(loss_dict)
+        score_dicts.append(score_dict)
+        confusion_matrices.append(confusion_matrix)
+
+    return loss_dicts, score_dicts, confusion_matrices
 
 
 def label_counting(dataset_name, data_path):
