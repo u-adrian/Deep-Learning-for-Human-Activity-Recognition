@@ -216,7 +216,7 @@ def analyze_unsupervised():
         os.path.join(path, "pa2"),
         range=(0.0, 1.0),
         f1_score="f1_score_w",
-        save_path=os.path.join(save_path, "pa2_f1_score_m.jpg"),
+        save_path=os.path.join(save_path, "pa2_f1_score_w.jpg"),
     )
 
 
