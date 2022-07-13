@@ -34,7 +34,7 @@ def windowz(data, size):
     start = 0
     while start < len(data):
         yield start, start + size
-        start += math.floor(size / 2) # TODO
+        start += math.floor(size / 2)  # TODO
 
 
 def segment_opp(x_train, y_train, window_size):
@@ -115,6 +115,7 @@ def max_pool(x, kernel_size, stride_size):
     return tf.nn.max_pool(
         x, ksize=[1, 1, kernel_size, 1], strides=[1, 1, stride_size, 1], padding="VALID"
     )
+
 
 def get_data(dataset, data_path, num_channels):
     if dataset == "opp":
@@ -229,6 +230,7 @@ def get_data(dataset, data_path, num_channels):
 
     return train_x, train_y, test_x, test_y
 
+
 def get_model(X, num_channels, num_labels):
     stride_size = 2
     kernel_size_1 = 7
@@ -283,6 +285,7 @@ def get_model(X, num_channels, num_labels):
 
     return y_conv, dropout_1, dropout_2, dropout_3
 
+
 def cnn_execute(dataset, data_path, aug_function=None):
     # MAIN ()
 
@@ -320,9 +323,13 @@ def cnn_execute(dataset, data_path, aug_function=None):
 
     train_x, train_y, test_x, test_y = get_data(dataset, data_path, num_channels)
 
-    data_x, data_y = np.concatenate([train_x, test_x]), np.concatenate([train_y, test_y])
+    data_x, data_y = np.concatenate([train_x, test_x]), np.concatenate(
+        [train_y, test_y]
+    )
 
-    X = tf.placeholder(tf.float32, shape=[None, input_height, input_width, num_channels])
+    X = tf.placeholder(
+        tf.float32, shape=[None, input_height, input_width, num_channels]
+    )
     Y = tf.placeholder(tf.float32, shape=[None, num_labels])
 
     print("X shape =", X.shape)
@@ -336,15 +343,13 @@ def cnn_execute(dataset, data_path, aug_function=None):
     training_epochs = 50
 
     # TRAINING THE MODEL
-    config = tf.ConfigProto(
-        device_count={'GPU': 0}
-    )
+    config = tf.ConfigProto(device_count={"GPU": 0})
 
     loss_dicts = []
     score_dicts = []
     confusion_matrices = []
 
-    n_splits=5
+    n_splits = 5
 
     kfold = KFold(n_splits=n_splits, shuffle=True)
     with tf.Session(config=config) as session:
@@ -360,7 +365,9 @@ def cnn_execute(dataset, data_path, aug_function=None):
                 tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=y_conv)
             )
 
-            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(
+                loss
+            )
 
             correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(Y, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
@@ -380,8 +387,8 @@ def cnn_execute(dataset, data_path, aug_function=None):
 
                 for b in range(total_batches):
                     offset = (b * batch_size) % (train_y.shape[0] - batch_size)
-                    batch_x = train_x[offset: (offset + batch_size), :, :, :]
-                    batch_y = train_y[offset: (offset + batch_size), :]
+                    batch_x = train_x[offset : (offset + batch_size), :, :, :]
+                    batch_y = train_y[offset : (offset + batch_size), :]
 
                     if aug_function is not None:
                         batch_x, batch_y = aug_function(batch_x, batch_y)
@@ -400,11 +407,23 @@ def cnn_execute(dataset, data_path, aug_function=None):
                 mean_train_loss = np.mean(cost_history)
                 train_accuracy = session.run(
                     accuracy,
-                    feed_dict={X: train_x, Y: train_y, dropout_1: 1 - 0.1, dropout_2: 1 - 0.25, dropout_3: 1 - 0.5}
+                    feed_dict={
+                        X: train_x,
+                        Y: train_y,
+                        dropout_1: 1 - 0.1,
+                        dropout_2: 1 - 0.25,
+                        dropout_3: 1 - 0.5,
+                    },
                 )
                 test_accuracy = session.run(
                     accuracy,
-                    feed_dict={X: test_x, Y: test_y, dropout_1: 1, dropout_2: 1, dropout_3: 1},
+                    feed_dict={
+                        X: test_x,
+                        Y: test_y,
+                        dropout_1: 1,
+                        dropout_2: 1,
+                        dropout_3: 1,
+                    },
                 )
 
                 loss_dict["Train_Loss"].append(str(mean_train_loss))
@@ -425,28 +444,48 @@ def cnn_execute(dataset, data_path, aug_function=None):
             y_p = tf.argmax(y_conv, 1)
             val_accuracy, y_pred = session.run(
                 [accuracy, y_p],
-                feed_dict={X: test_x, Y: test_y, dropout_1: 1, dropout_2: 1, dropout_3: 1},
+                feed_dict={
+                    X: test_x,
+                    Y: test_y,
+                    dropout_1: 1,
+                    dropout_2: 1,
+                    dropout_3: 1,
+                },
             )
             print("validation accuracy:", val_accuracy)
             y_true = np.argmax(test_y, 1)
 
             score_dict = {"f1_score_w": [], "f1_score_m": [], "f1_score_mean": []}
             if dataset == "opp" or dataset == "pa2":
-                score_dict["f1_score_w"].append(metrics.f1_score(y_true, y_pred, average="weighted"))
-                score_dict["f1_score_m"].append(metrics.f1_score(y_true, y_pred, average="macro"))
+                score_dict["f1_score_w"].append(
+                    metrics.f1_score(y_true, y_pred, average="weighted")
+                )
+                score_dict["f1_score_m"].append(
+                    metrics.f1_score(y_true, y_pred, average="macro")
+                )
                 # print "f1_score_mean", metrics.f1_score(y_true, y_pred, average="micro")
                 print("f1_score_w", score_dict["f1_score_w"][-1])
 
                 print("f1_score_m", score_dict["f1_score_m"][-1])
                 # print "f1_score_per_class", metrics.f1_score(y_true, y_pred, average=None)
             elif dataset == "dap":
-                score_dict["f1_score_m"].append(metrics.f1_score(y_true, y_pred, average="macro"))
+                score_dict["f1_score_m"].append(
+                    metrics.f1_score(y_true, y_pred, average="macro")
+                )
                 print("f1_score_m", score_dict["f1_score_m"][-1])
             elif dataset == "sph":
-                score_dict["f1_score_mean"].append(metrics.f1_score(y_true, y_pred, average="micro"))
-                score_dict["f1_score_w"].append(metrics.f1_score(y_true, y_pred, average="weighted"))
-                score_dict["f1_score_w"].append(metrics.f1_score(y_true, y_pred, average="weighted"))
-                score_dict["f1_score_m"].append(metrics.f1_score(y_true, y_pred, average="macro"))
+                score_dict["f1_score_mean"].append(
+                    metrics.f1_score(y_true, y_pred, average="micro")
+                )
+                score_dict["f1_score_w"].append(
+                    metrics.f1_score(y_true, y_pred, average="weighted")
+                )
+                score_dict["f1_score_w"].append(
+                    metrics.f1_score(y_true, y_pred, average="weighted")
+                )
+                score_dict["f1_score_m"].append(
+                    metrics.f1_score(y_true, y_pred, average="macro")
+                )
 
                 print("f1_score_mean", score_dict["f1_score_mean"][-1])
                 print("f1_score_w", score_dict["f1_score_w"][-1])
@@ -457,7 +496,6 @@ def cnn_execute(dataset, data_path, aug_function=None):
             print("confusion_matrix")
             confusion_matrix = metrics.confusion_matrix(y_true, y_pred)
             print(confusion_matrix)
-
 
             #######################################################################################
             #### micro- macro- weighted explanation ###############################################
@@ -652,7 +690,9 @@ def label_counting(dataset_name, data_path):
     print("test_x shape =", test_x.shape)
     print("test_y shape =", test_y.shape)
 
-    X = tf.placeholder(tf.float32, shape=[None, input_height, input_width, num_channels])
+    X = tf.placeholder(
+        tf.float32, shape=[None, input_height, input_width, num_channels]
+    )
     Y = tf.placeholder(tf.float32, shape=[None, num_labels])
 
     print("X shape =", X.shape)
@@ -708,9 +748,7 @@ def label_counting(dataset_name, data_path):
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     # TRAINING THE MODEL
-    config = tf.ConfigProto(
-        device_count={'GPU': 0}
-    )
+    config = tf.ConfigProto(device_count={"GPU": 0})
 
     loss_dict = {
         "Train_Accuracy": [],
@@ -727,8 +765,8 @@ def label_counting(dataset_name, data_path):
             cost_history = np.empty(shape=[0], dtype=float)
             for b in range(total_batches):
                 offset = (b * batch_size) % (train_y.shape[0] - batch_size)
-                batch_x = train_x[offset: (offset + batch_size), :, :, :]
-                batch_y = train_y[offset: (offset + batch_size), :]
+                batch_x = train_x[offset : (offset + batch_size), :, :, :]
+                batch_y = train_y[offset : (offset + batch_size), :]
 
                 for label in batch_y:
                     if not np.asarray(label).sum() == 1:
@@ -740,16 +778,22 @@ def label_counting(dataset_name, data_path):
                         label_counting_dict[label_str] = 0
                     label_counting_dict[label_str] = label_counting_dict[label_str] + 1
 
-                #print(label_counting_dict)
+                # print(label_counting_dict)
 
     return label_counting_dict
 
+
 def main(parser: argparse.ArgumentParser):
     parser.add_argument("--dataset", choices=["opp", "dap", "pa2"], default="opp")
-    parser.add_argument("--data_path", type=str, default=os.path.join(os.path.expanduser("~"), "datasets", "har_dataset"))
+    parser.add_argument(
+        "--data_path",
+        type=str,
+        default=os.path.join(os.path.expanduser("~"), "datasets", "har_dataset"),
+    )
     args = parser.parse_args()
 
     cnn_execute(args.dataset, args.data_path, None)
+
 
 if __name__ == "__main__":
     main(argparse.ArgumentParser())
