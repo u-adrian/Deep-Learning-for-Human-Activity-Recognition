@@ -150,7 +150,7 @@ def analyze(technique, path, range, f1_score, save_path):
     plt.ylabel(f1_score)
     plt.legend()
     # plt.show()
-    plt.savefig(save_path)
+    plt.savefig(save_path, dpi=300)
     plt.close()
 
 
@@ -207,16 +207,16 @@ def analyze_unsupervised():
     analyze(
         "unsupervised",
         os.path.join(path, "pa2"),
-        range=(0.0, 1.0),
+        range=(0.4, 1.0),
         f1_score="f1_score_m",
-        save_path=os.path.join(save_path, "pa2_f1_score_m.jpg"),
+        save_path=os.path.join(save_path, "unsupervised_pa2_f1_score_m.jpg"),
     )
     analyze(
         "unsupervised",
         os.path.join(path, "pa2"),
-        range=(0.0, 1.0),
+        range=(0.4, 1.0),
         f1_score="f1_score_w",
-        save_path=os.path.join(save_path, "pa2_f1_score_w.jpg"),
+        save_path=os.path.join(save_path, "unsupervised_pa2_f1_score_w.jpg"),
     )
 
 
