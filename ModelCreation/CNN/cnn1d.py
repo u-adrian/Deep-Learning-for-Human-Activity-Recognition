@@ -11,6 +11,8 @@ import sys
 import matplotlib.pyplot as plt
 import math
 
+from unsup_augmentation import prep_for_tsaug, aug, batch_aug, rand_aug
+
 tf.disable_v2_behavior()
 
 #%matplotlib inline
@@ -38,7 +40,7 @@ def windowz(data, size):
     start = 0
     while start < len(data):
         yield start, start + size
-        start += math.floor(size / 2) # TODO
+        start += math.floor(size / 2)  # TODO
 
 
 def segment_opp(x_train, y_train, window_size):
@@ -79,7 +81,9 @@ def segment_dap(x_train, y_train, window_size):
 
 
 def segment_pa2(x_train, y_train, window_size):
-    segments = np.zeros(((len(x_train) // (window_size // 2)) - 1, window_size, 52))
+    segments = np.zeros(
+        ((len(x_train) // (window_size // 2)) - 1, window_size, 52)
+    )  # shape ist: (#windows, window len, #labels)
     labels = np.zeros(((len(y_train) // (window_size // 2)) - 1))
     i_segment = 0
     i_label = 0
@@ -168,7 +172,7 @@ elif dataset == "dap":
         "daphnet.h5",
     )
 elif dataset == "pa2":
-    path = ""
+    path = "/Users/lukaskubelka/Documents/_KIT/_Studium/_M.Sc./_Semester/Semester-2/PSDA/Uebungen/E3/Deep-Learning-for-Human-Activity-Recognition/datasets/PAMAP2_Dataset/pamap2.h5"
 elif dataset == "sph":
     path = os.path.join(
         os.path.expanduser("~"), "Downloads", "SphereDataset", "sphere.h5"
@@ -178,7 +182,6 @@ else:
     sys.exit()
 
 f = h5py.File(path, "r")
-
 
 x_train = f.get("train").get("inputs")[()]
 y_train = f.get("train").get("targets")[()]
@@ -209,6 +212,12 @@ if dataset == "pa2":
     y_train = y_train[::3]
     x_test = x_test[::3, :]
     y_test = y_test[::3]
+
+    # x_train, y_train = aug(x_train, y_train)
+
+    # with np.printoptions(threshold=np.inf):
+    #    print(x_train == xx_train)
+
     print("x_train shape(downsampled) = ", x_train.shape)
     print("y_train shape(downsampled) =", y_train.shape)
     print("x_test shape(downsampled) =", x_test.shape)
@@ -248,8 +257,9 @@ elif dataset == "sph":
 else:
     print("no correct dataset")
 
-
-print("train_x shape =", train_x.shape)
+print(
+    "train_x shape =", train_x.shape
+)  # "Input-Bild" in CNN hat die Dimension 25x52 Pixel
 print("train_y shape =", train_y.shape)
 print("test_x shape =", test_x.shape)
 print("test_y shape =", test_y.shape)
@@ -320,8 +330,8 @@ dropout_1 = tf.placeholder(tf.float32)  # 0.1
 dropout_2 = tf.placeholder(tf.float32)  # 0.25
 dropout_3 = tf.placeholder(tf.float32)  # 0.5
 
-learning_rate = 0.0005
-training_epochs = 50
+learning_rate = 0.0001
+training_epochs = 100
 
 total_batches = train_x.shape[0] // batch_size
 
@@ -333,6 +343,16 @@ print("train_x shape =", train_x.shape)
 print("train_y shape =", train_y.shape)
 print("test_x shape =", test_x.shape)
 print("test_y shape =", test_y.shape)
+
+# import torch
+# import torchvision
+
+# print("###############")
+# print(train_x.dtype)
+# with np.printoptions(threshold=np.inf):
+#    print(train_x[0, 0, :, :])
+# test = torchvision.transforms.RandAugment().forward(torch.from_numpy(train_x[0, 0, :, :]))
+# print(type(test))
 
 X = tf.placeholder(tf.float32, shape=[None, input_height, input_width, num_channels])
 Y = tf.placeholder(tf.float32, shape=[None, num_labels])
@@ -472,8 +492,15 @@ with tf.Session() as session:
             batch_x = train_x[offset : (offset + batch_size), :, :, :]
             batch_y = train_y[offset : (offset + batch_size), :]
 
-            # print "batch_x shape =",batch_x.shape
-            # print "batch_y shape =",batch_y.shape
+            # print("batch_x shape =", batch_x.shape)
+            # print("batch_y shape =", batch_y.shape)
+
+            # batch_x = batch_aug(batch_x)
+            batch_x = rand_aug(
+                batch_x, N=2, M=3
+            )  # N=4 und M=3 performen am besten bei 200 epochs; N=2 und M=3 bei 50 epochs
+            # batch_y = np.concatenate([batch_y, batch_y])
+
             # _, c, summary= session.run([optimizer, loss,merged_summary_op],feed_dict={X: batch_x, Y : batch_y, dropout_1: 1-0.1, dropout_2: 1-0.25, dropout_3: 1-0.5})
             # cost_history = np.append(cost_history,c)
             _, c = session.run(

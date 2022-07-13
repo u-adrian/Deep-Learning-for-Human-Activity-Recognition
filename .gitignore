@@ -1,3 +1,5 @@
 .venv
 datasets/
 .DS_Store
+.ipynb_checkpoints
+*.ipynb
