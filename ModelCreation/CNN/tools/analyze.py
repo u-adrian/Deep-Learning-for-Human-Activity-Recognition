@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # Method -> Percentage -> scores
 import numpy as np
 
-from ModelCreation.CNN.cnn1d import label_counting
+#from ModelCreation.CNN.cnn1d import label_counting
 
 
 def analyze(path, range, f1_score, save_path):
@@ -89,6 +89,7 @@ def analyze(path, range, f1_score, save_path):
     plt.legend()
     #plt.show()
     plt.savefig(save_path)
+    plt.close()
 
 
 def plot_label_hist(dataset_path, dataset_name):
@@ -108,7 +109,7 @@ def plot_label_hist(dataset_path, dataset_name):
 
 if __name__ == "__main__":
     path = "/home/kit/stud/ucxam/output/human_activity"
-    save_path = "/home/kit/stud/ucxam/output/human_activity/"
+    save_path = "/home/kit/stud/ucxam/output/visualizations/"
 
     analyze(
         os.path.join(path, "opp"),
