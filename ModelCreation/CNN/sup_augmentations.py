@@ -10,7 +10,7 @@ import tsaug
 def do_augmentations(batch_x, batch_y):
     b_x, b_y = aug_scaling(batch_x, batch_y, 0.3)
     b_x, b_y = aug_jitter(b_x, b_y, 0.3)
-    #print("Before:", b_x.shape)
+    # print("Before:", b_x.shape)
     b_x, _ = aug_time_warp(b_x, b_y, 0.5)
     b_x, _ = aug_noise(b_x, b_y, 0.5)
     b_x, _ = aug_convolve(b_x, b_y, 0.5)
@@ -19,12 +19,12 @@ def do_augmentations(batch_x, batch_y):
     b_x, _ = aug_dropout(b_x, b_y, 0.5)
     b_x, _ = aug_pool(b_x, b_y, 0.5)
     b_x, _ = aug_quantize(b_x, b_y, 0.5)
-    #print("After:", b_x.shape)
+    # print("After:", b_x.shape)
     return b_x, b_y
 
 
 def aug_jitter(batch_x, batch_y, prob):
-    function = lambda x : augmentation.jitter(x=x, sigma=0.02)
+    function = lambda x: augmentation.jitter(x=x, sigma=0.02)
     return augmentation_capsule(batch_x, batch_y, function=function, prob=prob)
 
 
@@ -70,14 +70,16 @@ def aug_drift(batch_x, batch_y, prob):
 
 def aug_dropout(batch_x, batch_y, prob):
     b_x = np.squeeze(batch_x)
-    b_x = tsaug.Dropout(p=0.1, size=(1,3), fill=float(0.0), per_channel=True, prob=prob).augment(b_x)
+    b_x = tsaug.Dropout(
+        p=0.1, size=(1, 3), fill=float(0.0), per_channel=True, prob=prob
+    ).augment(b_x)
     b_x = np.expand_dims(b_x, axis=1)
     return b_x, batch_y
 
 
 def aug_pool(batch_x, batch_y, prob):
     b_x = np.squeeze(batch_x)
-    b_x = tsaug.Pool(kind='max', size=3, prob=prob).augment(b_x)
+    b_x = tsaug.Pool(kind="max", size=3, prob=prob).augment(b_x)
     b_x = np.expand_dims(b_x, axis=1)
     return b_x, batch_y
 
@@ -110,10 +112,10 @@ def time_slot_disturbance(batch_x):
     window_size = batch_x.shape[2]
     slot_size = 3
     b_x = batch_x
-    start_point = np.floor(np.random.random(batch_size) * (window_size - slot_size)).astype(np.int)
-    #print(start_point)
-    b_x[:,:,start_point] = 0
-    print(b_x[:,:,start_point].shape)
+    start_point = np.floor(
+        np.random.random(batch_size) * (window_size - slot_size)
+    ).astype(np.int)
+    # print(start_point)
+    b_x[:, :, start_point] = 0
+    print(b_x[:, :, start_point].shape)
     return b_x
-
-
