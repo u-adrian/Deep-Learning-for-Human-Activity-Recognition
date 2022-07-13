@@ -8,9 +8,8 @@ import numpy as np
 from ModelCreation.CNN.cnn1d import label_counting
 
 
-def analyze(path, range, f1_score):
+def analyze(path, range, f1_score, save_path):
     functions = os.listdir(path)
-    max_f_score_of_all_func = 0
 
     dictionary = {}
 
@@ -43,27 +42,9 @@ def analyze(path, range, f1_score):
     plt.ylim(range[0], range[1])
     # Baseline
     plt.bar(
-        function_nums[0] - 0.2,
-        dictionary["test_20"]["mean"][0],
-        yerr=dictionary["test_20"]["std"][0],
-        width=0.2,
-        color="grey",
-        edgecolor="black",
-        align="center",
-    )
-    plt.bar(
         function_nums[0],
         dictionary["test_50"]["mean"][0],
         yerr=dictionary["test_50"]["std"][0],
-        width=0.2,
-        color="grey",
-        edgecolor="black",
-        align="center",
-    )
-    plt.bar(
-        function_nums[0] + 0.2,
-        dictionary["test_80"]["mean"][0],
-        yerr=dictionary["test_80"]["std"][0],
         width=0.2,
         color="grey",
         edgecolor="black",
@@ -106,7 +87,8 @@ def analyze(path, range, f1_score):
 
     plt.ylabel(f1_score)
     plt.legend()
-    plt.show()
+    #plt.show()
+    plt.savefig(save_path)
 
 
 def plot_label_hist(dataset_path, dataset_name):
@@ -125,31 +107,39 @@ def plot_label_hist(dataset_path, dataset_name):
 
 
 if __name__ == "__main__":
+    path = "/home/kit/stud/ucxam/output/human_activity"
+    save_path = "/home/kit/stud/ucxam/output/human_activity/"
+
     analyze(
-        "C:/Dev/Smart_Data/Ergebnisse/human_activity/human_activity/opp",
+        os.path.join(path, "opp"),
         range=(0.4, 0.95),
         f1_score="f1_score_m",
+        save_path = os.path.join(save_path, "opp_f1_score_m.jpg"),
     )
     analyze(
-        "C:/Dev/Smart_Data/Ergebnisse/human_activity/human_activity/dap",
+        os.path.join(path, "dap"),
         range=(0.4, 0.8),
         f1_score="f1_score_m",
+        save_path = os.path.join(save_path, "dap_f1_score_m.jpg"),
     )
     analyze(
-        "C:/Dev/Smart_Data/Ergebnisse/human_activity/human_activity/pa2",
+        os.path.join(path, "pa2"),
         range=(0.4, 0.9),
         f1_score="f1_score_m",
+        save_path = os.path.join(save_path, "pa2_f1_score_m.jpg"),
     )
 
     analyze(
-        "C:/Dev/Smart_Data/Ergebnisse/human_activity/human_activity/opp",
+        os.path.join(path, "opp"),
         range=(0.8, 0.95),
         f1_score="f1_score_w",
+        save_path = os.path.join(save_path, "opp_f1_score_w.jpg"),
     )
     analyze(
-        "C:/Dev/Smart_Data/Ergebnisse/human_activity/human_activity/pa2",
+        os.path.join(path, "pa2"),
         range=(0.4, 0.9),
         f1_score="f1_score_w",
+        save_path = os.path.join(save_path, "pa2_f1_score_w.jpg"),
     )
 
     # plot_label_hist(dataset_path="C:/Users/adria/Downloads/", dataset_name="opp")
