@@ -12,7 +12,7 @@ import sys
 import matplotlib.pyplot as plt
 import math
 
-from unsup_augmentation import prep_for_tsaug, aug, batch_aug, rand_aug
+from unsup_augmentations import prep_for_tsaug, aug, batch_aug, rand_aug
 
 tf.disable_v2_behavior()
 

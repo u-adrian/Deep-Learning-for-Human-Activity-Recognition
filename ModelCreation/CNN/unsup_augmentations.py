@@ -61,16 +61,16 @@ def batch_aug(x_train_batch, augmenter=None):
     return x_train_aug[:, np.newaxis, :, :]
 
 
-def rand_aug(x_train_batch, N=4, M=3):
+def rand_aug(x_train_batch, y_train_batch, N=4, M=3):
     transforms = [
-        tsaug.AddNoise(scale=0.001 * M) @ 0.1,
-        tsaug.Crop(size=25) @ 0.1,
-        tsaug.Quantize(n_levels=10 * M) @ 0.1,
-        tsaug.Drift(max_drift=(0.01, 0.03)) @ 0.1,
-        tsaug.Reverse() @ 0.1,
+        tsaug.AddNoise(scale=0.001 * M),
+        tsaug.Crop(size=25),
+        tsaug.Quantize(n_levels=10 * M),
+        tsaug.Drift(max_drift=(0.01, 0.03)),
+        tsaug.Reverse(),
     ]
     x_train_aug = x_train_batch[:, 0, :, :]
     sampled_ops = np.random.choice(transforms, N)
     for op in sampled_ops:
         x_train_aug = op.augment(x_train_aug)
-    return x_train_aug[:, np.newaxis, :, :]
+    return (x_train_aug[:, np.newaxis, :, :], y_train_batch)
